@@ -1,1 +1,180 @@
 @import "tailwindcss";
+
+@theme {
+  /* Warm, earthy color palette */
+  --color-cream: #FBF8F3;
+  --color-cream-dark: #F5F0E8;
+  --color-charcoal: #2D2A26;
+  --color-charcoal-light: #4A4640;
+  --color-coral: #E07A5F;
+  --color-coral-dark: #C96A52;
+  --color-coral-light: #F4A693;
+  --color-sage: #81B29A;
+  --color-sage-light: #A8D4BC;
+  --color-dusty-rose: #D4A5A5;
+  --color-warm-gray: #9C9589;
+  --color-paper: #FFFEF9;
+
+  /* Typography */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+}
+
+/* Base styles */
+html {
+  font-family: var(--font-body);
+  background-color: var(--color-cream);
+  color: var(--color-charcoal);
+}
+
+/* Subtle paper grain texture */
+.grain-bg {
+  position: relative;
+}
+
+.grain-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Polaroid card style */
+.polaroid {
+  background: var(--color-paper);
+  padding: 12px 12px 48px 12px;
+  box-shadow:
+    0 1px 2px rgba(45, 42, 38, 0.04),
+    0 4px 8px rgba(45, 42, 38, 0.04),
+    0 12px 24px rgba(45, 42, 38, 0.06),
+    0 24px 48px rgba(45, 42, 38, 0.04);
+  transform: rotate(-1deg);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.polaroid:hover {
+  transform: rotate(0deg) translateY(-4px);
+  box-shadow:
+    0 2px 4px rgba(45, 42, 38, 0.04),
+    0 8px 16px rgba(45, 42, 38, 0.06),
+    0 20px 40px rgba(45, 42, 38, 0.08),
+    0 32px 64px rgba(45, 42, 38, 0.06);
+}
+
+/* Smooth page transitions */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fadeSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Staggered children animation */
+.stagger-children > * {
+  opacity: 0;
+  animation: fadeSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+
+/* Success/error feedback animations */
+@keyframes successPop {
+  0% { transform: scale(0.95); opacity: 0; }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.animate-success {
+  animation: successPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-error {
+  animation: shake 0.3s ease-in-out;
+}
+
+/* Button hover lift */
+.btn-lift {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-lift:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(224, 122, 95, 0.25);
+}
+
+.btn-lift:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Input focus styles */
+.input-warm {
+  transition: all 0.2s ease;
+  border: 2px solid var(--color-cream-dark);
+  background: var(--color-paper);
+}
+
+.input-warm:focus {
+  outline: none;
+  border-color: var(--color-coral);
+  box-shadow: 0 0 0 4px rgba(224, 122, 95, 0.1);
+}
+
+/* Photo overlay on hover */
+.photo-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-hover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(45, 42, 38, 0.4) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.photo-hover:hover::after {
+  opacity: 1;
+}
+
+/* Decorative elements */
+.decorative-line {
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-coral), var(--color-dusty-rose), var(--color-sage));
+  border-radius: 2px;
+}
+
+/* Loading shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, var(--color-cream-dark) 25%, var(--color-cream) 50%, var(--color-cream-dark) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

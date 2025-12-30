@@ -28,8 +28,13 @@ export default function App() {
   // Show loading while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
+      <div className="min-h-screen bg-cream grain-bg flex items-center justify-center">
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <div className="w-12 h-12 bg-coral/20 rounded-full flex items-center justify-center">
+            <div className="w-6 h-6 bg-coral rounded-full animate-pulse" />
+          </div>
+          <span className="text-warm-gray font-medium">Loading...</span>
+        </div>
       </div>
     )
   }
@@ -142,10 +147,13 @@ export default function App() {
   if (mode === 'practice') {
     if (dataLoading) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+        <div className="min-h-screen bg-cream grain-bg">
           <Header />
-          <div className="flex items-center justify-center p-4 pt-20">
-            <div className="text-gray-500">Loading flashcards...</div>
+          <div className="flex items-center justify-center p-6 pt-24">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 shimmer rounded-2xl" />
+              <span className="text-warm-gray">Loading flashcards...</span>
+            </div>
           </div>
         </div>
       )
@@ -153,19 +161,29 @@ export default function App() {
 
     if (flashcards.length === 0) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+        <div className="min-h-screen bg-cream grain-bg">
           <Header />
-          <div className="flex items-center justify-center p-4 pt-20">
-            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-              <div className="text-6xl mb-4">👥</div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">Coworker Flashcards</h1>
-              <p className="text-gray-600 mb-6">Add your coworkers to start practicing their names!</p>
-              <button
-                onClick={() => setMode('add')}
-                className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition"
-              >
-                Add Your First Coworker
-              </button>
+          <div className="flex items-center justify-center p-6 pt-24">
+            <div className="relative z-10 animate-in">
+              {/* Decorative blurs */}
+              <div className="absolute -top-12 -left-12 w-40 h-40 bg-coral/10 rounded-full blur-3xl" />
+              <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-sage/10 rounded-full blur-3xl" />
+
+              <div className="relative bg-paper rounded-2xl shadow-[0_4px_24px_rgba(45,42,38,0.08)] p-10 max-w-md w-full text-center">
+                <div className="w-20 h-20 bg-cream rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-inner">
+                  <svg className="w-10 h-10 text-coral" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                  </svg>
+                </div>
+                <h1 className="font-display text-2xl font-semibold text-charcoal mb-3">No faces yet!</h1>
+                <p className="text-charcoal-light mb-8">Add your coworkers to start learning their names.</p>
+                <button
+                  onClick={() => setMode('add')}
+                  className="bg-coral text-cream px-8 py-4 rounded-xl font-medium btn-lift"
+                >
+                  Add Your First Face
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -173,31 +191,33 @@ export default function App() {
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+      <div className="min-h-screen bg-cream grain-bg">
         <Header />
-        <div className="p-4">
-          <div className="max-w-lg mx-auto">
+        <div className="p-6 pt-8">
+          <div className="max-w-md mx-auto animate-in">
             {/* Stats Header */}
             <div className="flex justify-between items-center mb-6">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm">
                 {stats.total > 0 && (
-                  <span className="bg-white px-3 py-1 rounded-full shadow">
-                    {stats.correct}/{stats.total} correct ({Math.round(stats.correct/stats.total*100)}%)
+                  <span className="bg-paper px-4 py-2 rounded-full shadow-sm text-charcoal-light border border-cream-dark">
+                    <span className="text-sage font-semibold">{stats.correct}</span>
+                    <span className="text-warm-gray">/{stats.total}</span>
+                    <span className="text-warm-gray ml-1">({Math.round(stats.correct/stats.total*100)}%)</span>
                   </span>
                 )}
               </div>
               <button
                 onClick={() => setMode('manage')}
-                className="text-indigo-600 hover:text-indigo-800 font-medium"
+                className="text-coral hover:text-coral-dark font-medium transition-colors"
               >
                 Manage Cards
               </button>
             </div>
 
-            {/* Flashcard */}
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Flashcard - Polaroid Style */}
+            <div className="polaroid rounded-xl overflow-hidden">
               {/* Photo */}
-              <div className="aspect-square bg-gray-100 flex items-center justify-center">
+              <div className="aspect-square bg-cream-dark flex items-center justify-center overflow-hidden photo-hover">
                 {currentCoworker?.photo_url ? (
                   <img
                     src={currentCoworker.photo_url}
@@ -205,17 +225,23 @@ export default function App() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="text-8xl text-gray-300">👤</div>
+                  <div className="flex flex-col items-center justify-center text-warm-gray">
+                    <svg className="w-20 h-20 mb-2 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    </svg>
+                  </div>
                 )}
               </div>
 
-              {/* Card Number */}
-              <div className="text-center text-sm text-gray-400 pt-3">
-                Card {currentIndex + 1} of {flashcards.length}
+              {/* Card Info */}
+              <div className="pt-4 pb-2 text-center">
+                <span className="text-xs font-medium text-warm-gray tracking-wide uppercase">
+                  Card {currentIndex + 1} of {flashcards.length}
+                </span>
               </div>
 
               {/* Input Area */}
-              <div className="p-6">
+              <div className="px-4 pb-6">
                 {!showAnswer ? (
                   <div className="space-y-4">
                     <input
@@ -223,21 +249,21 @@ export default function App() {
                       value={guess}
                       onChange={(e) => setGuess(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && guess && checkGuess()}
-                      placeholder="Type their name..."
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-lg focus:border-indigo-500 focus:outline-none"
+                      placeholder="Who is this?"
+                      className="w-full px-4 py-3 input-warm rounded-xl text-lg text-charcoal font-medium placeholder:text-warm-gray/60"
                       autoFocus
                     />
                     <div className="flex gap-3">
                       <button
                         onClick={checkGuess}
                         disabled={!guess}
-                        className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                        className="flex-1 bg-charcoal text-cream py-3 rounded-xl font-medium btn-lift disabled:bg-cream-dark disabled:text-warm-gray disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                       >
                         Check
                       </button>
                       <button
                         onClick={() => setShowAnswer(true)}
-                        className="px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition"
+                        className="px-5 py-3 border-2 border-cream-dark rounded-xl text-charcoal-light hover:bg-cream-dark transition-colors"
                       >
                         Reveal
                       </button>
@@ -246,31 +272,53 @@ export default function App() {
                 ) : (
                   <div className="space-y-4">
                     {/* Result */}
-                    <div className={`text-center p-4 rounded-lg ${
+                    <div className={`text-center p-5 rounded-xl ${
                       feedback === 'correct'
-                        ? 'bg-green-50 border-2 border-green-200'
+                        ? 'bg-sage/10 border-2 border-sage/30'
                         : feedback === 'incorrect'
-                        ? 'bg-red-50 border-2 border-red-200'
-                        : 'bg-gray-50 border-2 border-gray-200'
-                    }`}>
-                      {feedback === 'correct' && <div className="text-green-600 text-lg mb-1">✓ Correct!</div>}
-                      {feedback === 'incorrect' && <div className="text-red-600 text-lg mb-1">✗ Not quite</div>}
-                      <div className="text-2xl font-bold text-gray-800">{currentCoworker.name}</div>
+                        ? 'bg-coral/10 border-2 border-coral/30'
+                        : 'bg-cream border-2 border-cream-dark'
+                    } ${feedback ? 'animate-success' : ''}`}>
+                      {feedback === 'correct' && (
+                        <div className="text-sage font-medium mb-2 flex items-center justify-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Correct!
+                        </div>
+                      )}
+                      {feedback === 'incorrect' && (
+                        <div className="text-coral font-medium mb-2 flex items-center justify-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Not quite
+                        </div>
+                      )}
+                      <div className="font-display text-2xl font-semibold text-charcoal">{currentCoworker.name}</div>
                     </div>
 
                     {/* Mnemonic */}
                     {currentCoworker.mnemonic && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                        <div className="text-xs font-medium text-amber-700 mb-1">💡 Memory Tip</div>
-                        <div className="text-amber-900">{currentCoworker.mnemonic}</div>
+                      <div className="bg-dusty-rose/10 border border-dusty-rose/30 rounded-xl p-4">
+                        <div className="text-xs font-semibold text-dusty-rose uppercase tracking-wide mb-2 flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                          Memory Tip
+                        </div>
+                        <div className="text-charcoal-light leading-relaxed">{currentCoworker.mnemonic}</div>
                       </div>
                     )}
 
                     <button
                       onClick={nextCard}
-                      className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition"
+                      className="w-full bg-coral text-cream py-3 rounded-xl font-medium btn-lift flex items-center justify-center gap-2"
                     >
-                      Next Card →
+                      Next Card
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </button>
                   </div>
                 )}
@@ -280,9 +328,12 @@ export default function App() {
             {/* Shuffle Button */}
             <button
               onClick={shuffleCards}
-              className="w-full mt-4 py-3 text-indigo-600 font-medium hover:bg-white rounded-lg transition"
+              className="w-full mt-6 py-3 text-coral font-medium hover:bg-paper rounded-xl transition-colors flex items-center justify-center gap-2"
             >
-              🔀 Shuffle Cards
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Shuffle Cards
             </button>
           </div>
         </div>
@@ -293,51 +344,69 @@ export default function App() {
   // Manage Mode
   if (mode === 'manage') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+      <div className="min-h-screen bg-cream grain-bg">
         <Header />
-        <div className="p-4">
-          <div className="max-w-2xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-800">Manage Coworkers</h1>
-              <div className="flex gap-2">
+        <div className="p-6 pt-8">
+          <div className="max-w-2xl mx-auto animate-in">
+            <div className="flex justify-between items-center mb-8">
+              <h1 className="font-display text-2xl font-semibold text-charcoal">Your Faces</h1>
+              <div className="flex gap-3">
                 <button
                   onClick={() => setMode('add')}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition"
+                  className="bg-coral text-cream px-5 py-2.5 rounded-xl font-medium btn-lift flex items-center gap-2"
                 >
-                  + Add New
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add New
                 </button>
                 {flashcards.length > 0 && (
                   <button
                     onClick={() => { setMode('practice'); setStats({ correct: 0, total: 0 }); }}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition"
+                    className="bg-sage text-cream px-5 py-2.5 rounded-xl font-medium btn-lift flex items-center gap-2"
                   >
-                    Practice →
+                    Practice
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
                   </button>
                 )}
               </div>
             </div>
 
             {dataLoading ? (
-              <div className="bg-white rounded-xl p-8 text-center text-gray-500">
-                Loading...
+              <div className="bg-paper rounded-2xl p-10 text-center shadow-sm">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-16 h-16 shimmer rounded-2xl" />
+                  <span className="text-warm-gray">Loading...</span>
+                </div>
               </div>
             ) : flashcards.length === 0 ? (
-              <div className="bg-white rounded-xl p-8 text-center text-gray-500">
-                No coworkers added yet. Click "Add New" to get started!
+              <div className="bg-paper rounded-2xl p-10 text-center shadow-sm">
+                <div className="w-16 h-16 bg-cream rounded-xl mx-auto mb-4 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-warm-gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </div>
+                <p className="text-charcoal-light">No faces added yet. Click "Add New" to get started!</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 stagger-children">
                 {flashcards.map((coworker) => (
-                  <div key={coworker.id} className="bg-white rounded-xl shadow p-4 flex gap-4">
+                  <div key={coworker.id} className="bg-paper rounded-2xl shadow-sm p-5 flex gap-5 hover:shadow-md transition-shadow">
                     {/* Photo */}
-                    <div className="w-24 h-24 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden relative group">
+                    <div className="w-24 h-24 bg-cream-dark rounded-xl flex-shrink-0 overflow-hidden relative group">
                       {coworker.photo_url ? (
                         <img src={coworker.photo_url} alt={coworker.name} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl text-gray-300">👤</div>
+                        <div className="w-full h-full flex items-center justify-center">
+                          <svg className="w-10 h-10 text-warm-gray/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                          </svg>
+                        </div>
                       )}
-                      <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition">
-                        <span className="text-white text-sm">{saving ? 'Uploading...' : 'Change'}</span>
+                      <label className="absolute inset-0 bg-charcoal/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+                        <span className="text-cream text-sm font-medium">{saving ? 'Uploading...' : 'Change'}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -349,36 +418,44 @@ export default function App() {
                     </div>
 
                     {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg text-gray-800">{coworker.name}</h3>
+                    <div className="flex-1 min-w-0 py-1">
+                      <h3 className="font-display font-semibold text-lg text-charcoal mb-1">{coworker.name}</h3>
 
                       {coworker.mnemonic ? (
-                        <p className="text-sm text-gray-600 mt-1">💡 {coworker.mnemonic}</p>
+                        <p className="text-sm text-charcoal-light leading-relaxed flex items-start gap-2">
+                          <svg className="w-4 h-4 text-dusty-rose flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                          {coworker.mnemonic}
+                        </p>
                       ) : (
                         <button
                           onClick={() => handleGenerateMnemonic(coworker.id)}
                           disabled={generatingMnemonic}
-                          className="text-sm text-indigo-600 hover:text-indigo-800 mt-1 disabled:text-gray-400"
+                          className="text-sm text-coral hover:text-coral-dark disabled:text-warm-gray flex items-center gap-1.5 transition-colors"
                         >
-                          {generatingMnemonic ? '✨ Generating...' : '✨ Generate memory tip'}
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                          </svg>
+                          {generatingMnemonic ? 'Generating...' : 'Generate memory tip'}
                         </button>
                       )}
                     </div>
 
                     {/* Actions */}
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col justify-center gap-2">
                       {coworker.mnemonic && (
                         <button
                           onClick={() => handleGenerateMnemonic(coworker.id)}
                           disabled={generatingMnemonic}
-                          className="text-xs text-gray-500 hover:text-indigo-600"
+                          className="text-xs text-warm-gray hover:text-coral transition-colors"
                         >
-                          Regenerate tip
+                          Regenerate
                         </button>
                       )}
                       <button
                         onClick={() => handleRemoveCoworker(coworker.id)}
-                        className="text-xs text-red-500 hover:text-red-700"
+                        className="text-xs text-warm-gray hover:text-coral transition-colors"
                       >
                         Remove
                       </button>
@@ -396,30 +473,39 @@ export default function App() {
   // Add Mode
   if (mode === 'add') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+      <div className="min-h-screen bg-cream grain-bg">
         <Header />
-        <div className="p-4">
-          <div className="max-w-md mx-auto">
+        <div className="p-6 pt-8">
+          <div className="max-w-md mx-auto animate-in">
             <button
               onClick={() => setMode('manage')}
-              className="text-indigo-600 hover:text-indigo-800 mb-4"
+              className="text-coral hover:text-coral-dark mb-6 flex items-center gap-2 font-medium transition-colors"
             >
-              ← Back
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
             </button>
 
-            <div className="bg-white rounded-2xl shadow-xl p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">Add Coworker</h2>
+            <div className="bg-paper rounded-2xl shadow-[0_4px_24px_rgba(45,42,38,0.08)] p-8">
+              <h2 className="font-display text-xl font-semibold text-charcoal mb-6">Add a New Face</h2>
 
               {/* Photo Upload */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Photo</label>
-                <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden relative group cursor-pointer">
+                <label className="block text-sm font-medium text-charcoal-light mb-3">Photo</label>
+                <div className="aspect-square bg-cream rounded-xl overflow-hidden relative group cursor-pointer border-2 border-dashed border-cream-dark hover:border-coral/50 transition-colors">
                   {newCoworker.photoPreview ? (
                     <img src={newCoworker.photoPreview} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                      <div className="text-6xl mb-2">📷</div>
-                      <div>Click to upload photo</div>
+                    <div className="w-full h-full flex flex-col items-center justify-center text-warm-gray">
+                      <div className="w-16 h-16 bg-cream-dark rounded-2xl flex items-center justify-center mb-4">
+                        <svg className="w-8 h-8 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                        </svg>
+                      </div>
+                      <div className="text-sm font-medium text-charcoal-light">Click to upload photo</div>
+                      <div className="text-xs text-warm-gray mt-1">or drag and drop</div>
                     </div>
                   )}
                   <label className="absolute inset-0 cursor-pointer">
@@ -433,24 +519,27 @@ export default function App() {
                 </div>
               </div>
 
+              {/* Decorative line */}
+              <div className="decorative-line w-12 mx-auto mb-6" />
+
               {/* Name Input */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+              <div className="mb-8">
+                <label className="block text-sm font-medium text-charcoal-light mb-3">Name</label>
                 <input
                   type="text"
                   value={newCoworker.name}
                   onChange={(e) => setNewCoworker(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Enter their full name"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none"
+                  className="w-full px-4 py-3 input-warm rounded-xl text-charcoal placeholder:text-warm-gray/60"
                 />
               </div>
 
               <button
                 onClick={handleAddCoworker}
                 disabled={!newCoworker.name.trim() || saving}
-                className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                className="w-full bg-coral text-cream py-4 rounded-xl font-medium btn-lift disabled:bg-cream-dark disabled:text-warm-gray disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
               >
-                {saving ? 'Adding...' : 'Add Coworker'}
+                {saving ? 'Adding...' : 'Add Face'}
               </button>
             </div>
           </div>
