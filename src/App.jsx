@@ -368,6 +368,9 @@ export default function App() {
     }
   }
 
+  // Check if practice session is complete
+  const isSessionComplete = stats.total > 0 && stats.total >= practiceCards.length
+
   // Keyboard shortcuts for practice mode
   useEffect(() => {
     if (mode !== 'practice' || !currentCoworker || isSessionComplete) return
@@ -409,9 +412,6 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [mode, showAnswer, feedback, correctionComplete, currentCoworker, isSessionComplete])
-
-  // Check if practice session is complete
-  const isSessionComplete = stats.total > 0 && stats.total >= practiceCards.length
 
   // Practice Mode
   if (mode === 'practice') {
