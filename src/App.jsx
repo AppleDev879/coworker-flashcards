@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from './context/AuthContext'
 import { useFlashcards } from './hooks/useFlashcards'
 import { supabase } from './lib/supabase'
@@ -25,6 +25,8 @@ export default function App() {
   const [showAnswer, setShowAnswer] = useState(false)
   const [mode, setMode] = useState('practice')
   const [stats, setStats] = useState({ correct: 0, total: 0 })
+  const [shuffledIndices, setShuffledIndices] = useState([])
+  const [difficulty, setDifficulty] = useState('first') // 'first' or 'full'
   const [newCoworker, setNewCoworker] = useState({ name: '', photoFile: null, photoPreview: null })
   const [generatingMnemonicId, setGeneratingMnemonicId] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -38,6 +40,12 @@ export default function App() {
   // Filter cards with photos for practice mode
   const practiceCards = useMemo(() => flashcards.filter(c => c.photo_url), [flashcards])
   const draftCount = flashcards.length - practiceCards.length
+
+  // Reset shuffle when cards change
+  useEffect(() => {
+    setShuffledIndices([])
+    setCurrentIndex(0)
+  }, [practiceCards.length])
 
   // Show loading while checking auth
   if (authLoading) {
@@ -58,7 +66,9 @@ export default function App() {
     return <LoginPage />
   }
 
-  const currentCoworker = practiceCards[currentIndex]
+  // Use shuffled order if available, otherwise sequential
+  const actualCardIndex = shuffledIndices.length > 0 ? shuffledIndices[currentIndex] : currentIndex
+  const currentCoworker = practiceCards[actualCardIndex]
 
   const handleFileUpload = (e, isEditing = false, editId = null) => {
     const file = e.target.files[0]
@@ -201,7 +211,13 @@ export default function App() {
   }
 
   const checkGuess = () => {
-    const isCorrect = guess.toLowerCase().trim() === currentCoworker.name.toLowerCase().trim()
+    const guessLower = guess.toLowerCase().trim()
+    const fullName = currentCoworker.name.toLowerCase().trim()
+    const firstName = fullName.split(' ')[0]
+
+    const target = difficulty === 'first' ? firstName : fullName
+    const isCorrect = guessLower === target
+
     setFeedback(isCorrect ? 'correct' : 'incorrect')
     setShowAnswer(true)
     setStats(prev => ({
@@ -218,6 +234,13 @@ export default function App() {
   }
 
   const shuffleCards = () => {
+    // Fisher-Yates shuffle
+    const indices = [...Array(practiceCards.length).keys()]
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[indices[i], indices[j]] = [indices[j], indices[i]]
+    }
+    setShuffledIndices(indices)
     setCurrentIndex(0)
     setGuess('')
     setFeedback(null)
@@ -293,12 +316,22 @@ export default function App() {
                   </span>
                 )}
               </div>
-              <button
-                onClick={() => setMode('manage')}
-                className="text-coral hover:text-coral-dark font-medium transition-colors"
-              >
-                Manage Cards
-              </button>
+              <div className="flex items-center gap-4">
+                <select
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                  className="px-3 py-1.5 bg-paper border border-cream-dark rounded-lg text-sm text-charcoal focus:outline-none focus:border-coral/50 cursor-pointer"
+                >
+                  <option value="first">First name only</option>
+                  <option value="full">Full name</option>
+                </select>
+                <button
+                  onClick={() => setMode('manage')}
+                  className="text-coral hover:text-coral-dark font-medium transition-colors"
+                >
+                  Manage Cards
+                </button>
+              </div>
             </div>
 
             {/* Flashcard - Polaroid Style */}
@@ -336,7 +369,7 @@ export default function App() {
                       value={guess}
                       onChange={(e) => setGuess(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && guess && checkGuess()}
-                      placeholder="Who is this?"
+                      placeholder={difficulty === 'first' ? "First name?" : "Full name?"}
                       className="w-full px-4 py-3 input-warm rounded-xl text-lg text-charcoal font-medium placeholder:text-warm-gray/60"
                       autoFocus
                     />
@@ -349,7 +382,11 @@ export default function App() {
                         Check
                       </button>
                       <button
-                        onClick={() => setShowAnswer(true)}
+                        onClick={() => {
+                          setShowAnswer(true)
+                          setFeedback('incorrect')
+                          setStats(prev => ({ ...prev, total: prev.total + 1 }))
+                        }}
                         className="px-5 py-3 border-2 border-cream-dark rounded-xl text-charcoal-light hover:bg-cream-dark transition-colors"
                       >
                         Reveal
