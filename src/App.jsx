@@ -578,7 +578,7 @@ export default function App() {
                     </button>
                     <button
                       onClick={() => setMode('manage')}
-                      className="w-full py-4 rounded-xl font-medium border-2 border-cream-dark text-charcoal-light hover:bg-cream transition-colors"
+                      className="w-full py-4 rounded-xl font-medium border-2 border-cream-dark text-charcoal-light hover:bg-cream transition-colors cursor-pointer"
                     >
                       Manage Cards
                     </button>
@@ -619,7 +619,7 @@ export default function App() {
               </div>
               <button
                 onClick={() => setMode('manage')}
-                className="text-coral hover:text-coral-dark font-medium transition-colors text-sm sm:text-base"
+                className="text-coral hover:text-coral-dark font-medium transition-colors text-sm sm:text-base cursor-pointer"
               >
                 Manage Cards
               </button>
@@ -681,7 +681,7 @@ export default function App() {
                           setCorrectionComplete(false)
                           setStats(prev => ({ ...prev, total: prev.total + 1 }))
                         }}
-                        className="px-5 py-3 border-2 border-cream-dark rounded-xl text-charcoal-light hover:bg-cream-dark transition-colors"
+                        className="px-5 py-3 border-2 border-cream-dark rounded-xl text-charcoal-light hover:bg-cream-dark transition-colors cursor-pointer"
                       >
                         Reveal
                       </button>
@@ -732,7 +732,7 @@ export default function App() {
                       <button
                         onClick={handleAddNickname}
                         disabled={addingNickname}
-                        className="w-full py-2.5 px-4 bg-dusty-rose/10 border border-dusty-rose/30 rounded-xl text-sm text-dusty-rose hover:bg-dusty-rose/20 transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-2.5 px-4 bg-dusty-rose/10 border border-dusty-rose/30 rounded-xl text-sm text-dusty-rose hover:bg-dusty-rose/20 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -756,13 +756,13 @@ export default function App() {
                           <button
                             onClick={handleSavePracticeMnemonic}
                             disabled={saving || !practiceMnemonicText.trim()}
-                            className="px-3 py-1.5 bg-sage text-cream text-sm rounded-lg btn-lift disabled:bg-cream-dark disabled:text-warm-gray"
+                            className="px-3 py-1.5 bg-sage text-cream text-sm rounded-lg btn-lift disabled:bg-cream-dark disabled:text-warm-gray cursor-pointer"
                           >
                             {saving ? 'Saving...' : 'Save'}
                           </button>
                           <button
                             onClick={() => { setEditingPracticeMnemonic(false); setPracticeMnemonicText(''); }}
-                            className="px-3 py-1.5 text-sm text-warm-gray hover:text-charcoal"
+                            className="px-3 py-1.5 text-sm text-warm-gray hover:text-charcoal cursor-pointer"
                           >
                             Cancel
                           </button>
@@ -779,7 +779,7 @@ export default function App() {
                           </span>
                           <button
                             onClick={() => { setEditingPracticeMnemonic(true); setPracticeMnemonicText(currentCoworker.mnemonic); }}
-                            className="text-dusty-rose/70 hover:text-dusty-rose text-xs font-normal normal-case"
+                            className="text-dusty-rose/70 hover:text-dusty-rose text-xs font-normal normal-case cursor-pointer"
                           >
                             Edit
                           </button>
@@ -789,7 +789,7 @@ export default function App() {
                     ) : feedback === 'incorrect' && (
                       <button
                         onClick={() => { setEditingPracticeMnemonic(true); setPracticeMnemonicText(''); }}
-                        className="w-full py-2.5 px-4 border border-cream-dark rounded-xl text-sm text-charcoal-light hover:bg-cream transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-2.5 px-4 border border-cream-dark rounded-xl text-sm text-charcoal-light hover:bg-cream transition-colors flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -829,7 +829,7 @@ export default function App() {
                         </div>
                         <button
                           onClick={nextCard}
-                          className="mt-2 text-xs text-warm-gray hover:text-charcoal-light transition-colors"
+                          className="mt-2 text-xs text-warm-gray hover:text-charcoal-light transition-colors cursor-pointer"
                         >
                           skip →
                         </button>
@@ -859,7 +859,7 @@ export default function App() {
             {/* Shuffle Button */}
             <button
               onClick={shuffleCards}
-              className="w-full mt-6 py-3 text-coral font-medium hover:bg-paper rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full mt-6 py-3 text-coral font-medium hover:bg-paper rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -986,13 +986,13 @@ export default function App() {
                             <button
                               onClick={() => handleSaveCustomMnemonic(coworker.id)}
                               disabled={saving || !customMnemonicText.trim()}
-                              className="px-3 py-1.5 bg-sage text-cream text-sm rounded-lg btn-lift disabled:bg-cream-dark disabled:text-warm-gray"
+                              className="px-3 py-1.5 bg-sage text-cream text-sm rounded-lg btn-lift disabled:bg-cream-dark disabled:text-warm-gray cursor-pointer"
                             >
                               {saving ? 'Saving...' : 'Save'}
                             </button>
                             <button
                               onClick={cancelEditingMnemonic}
-                              className="px-3 py-1.5 text-sm text-warm-gray hover:text-charcoal"
+                              className="px-3 py-1.5 text-sm text-warm-gray hover:text-charcoal cursor-pointer"
                             >
                               Cancel
                             </button>
@@ -1009,14 +1009,14 @@ export default function App() {
                           <div className="flex gap-3 mt-2">
                             <button
                               onClick={() => startEditingMnemonic(coworker)}
-                              className="text-xs text-warm-gray hover:text-coral transition-colors"
+                              className="text-xs text-warm-gray hover:text-coral transition-colors cursor-pointer"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => handleGenerateMnemonic(coworker.id)}
                               disabled={generatingMnemonicId === coworker.id}
-                              className="text-xs text-warm-gray hover:text-coral transition-colors"
+                              className="text-xs text-warm-gray hover:text-coral transition-colors cursor-pointer"
                             >
                               {generatingMnemonicId === coworker.id ? 'Generating...' : 'Regenerate'}
                             </button>
@@ -1027,7 +1027,7 @@ export default function App() {
                           <button
                             onClick={() => handleGenerateMnemonic(coworker.id)}
                             disabled={generatingMnemonicId === coworker.id || !coworker.photo_url}
-                            className="text-sm text-coral hover:text-coral-dark disabled:text-warm-gray flex items-center gap-1.5 transition-colors"
+                            className="text-sm text-coral hover:text-coral-dark disabled:text-warm-gray flex items-center gap-1.5 transition-colors cursor-pointer"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -1036,7 +1036,7 @@ export default function App() {
                           </button>
                           <button
                             onClick={() => startEditingMnemonic(coworker)}
-                            className="text-sm text-sage hover:text-sage-light flex items-center gap-1.5 transition-colors"
+                            className="text-sm text-sage hover:text-sage-light flex items-center gap-1.5 transition-colors cursor-pointer"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -1051,7 +1051,7 @@ export default function App() {
                     <div className="flex flex-col justify-center gap-2">
                       <button
                         onClick={() => handleRemoveCoworker(coworker.id)}
-                        className="text-xs text-warm-gray hover:text-coral transition-colors"
+                        className="text-xs text-warm-gray hover:text-coral transition-colors cursor-pointer"
                       >
                         Remove
                       </button>
@@ -1063,7 +1063,7 @@ export default function App() {
                 <div className="pt-8 mt-4 border-t border-cream-dark">
                   <button
                     onClick={handleClearAll}
-                    className="w-full py-3 text-sm text-warm-gray hover:text-coral transition-colors"
+                    className="w-full py-3 text-sm text-warm-gray hover:text-coral transition-colors cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -1085,7 +1085,7 @@ export default function App() {
           <div className="max-w-md mx-auto animate-in">
             <button
               onClick={() => setMode('manage')}
-              className="text-coral hover:text-coral-dark mb-6 flex items-center gap-2 font-medium transition-colors"
+              className="text-coral hover:text-coral-dark mb-6 flex items-center gap-2 font-medium transition-colors cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
