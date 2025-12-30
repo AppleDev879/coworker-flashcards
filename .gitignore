@@ -28,3 +28,4 @@ supabase/.temp/
 
 # MCP config (contains project refs)
 .mcp.json
+.vercel
