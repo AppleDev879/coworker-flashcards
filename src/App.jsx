@@ -14,6 +14,7 @@ export default function App() {
     addFlashcard,
     addFlashcardsBatch,
     updatePhoto,
+    updateFlashcard,
     deleteFlashcard,
     generateMnemonic,
     refetch
@@ -29,6 +30,8 @@ export default function App() {
   const [difficulty, setDifficulty] = useState('first') // 'first' or 'full'
   const [newCoworker, setNewCoworker] = useState({ name: '', photoFile: null, photoPreview: null })
   const [generatingMnemonicId, setGeneratingMnemonicId] = useState(null)
+  const [editingMnemonicId, setEditingMnemonicId] = useState(null)
+  const [customMnemonicText, setCustomMnemonicText] = useState('')
   const [saving, setSaving] = useState(false)
   const [importText, setImportText] = useState('')
   const [importing, setImporting] = useState(false)
@@ -155,6 +158,32 @@ export default function App() {
     } finally {
       setGeneratingMnemonicId(null)
     }
+  }
+
+  const handleSaveCustomMnemonic = async (id) => {
+    if (!customMnemonicText.trim()) return
+
+    setSaving(true)
+    try {
+      await updateFlashcard(id, { mnemonic: customMnemonicText.trim() })
+      setEditingMnemonicId(null)
+      setCustomMnemonicText('')
+    } catch (err) {
+      console.error('Failed to save mnemonic:', err)
+      alert('Failed to save mnemonic. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const startEditingMnemonic = (coworker) => {
+    setEditingMnemonicId(coworker.id)
+    setCustomMnemonicText(coworker.mnemonic || '')
+  }
+
+  const cancelEditingMnemonic = () => {
+    setEditingMnemonicId(null)
+    setCustomMnemonicText('')
   }
 
   const handleBatchImport = async () => {
@@ -690,38 +719,84 @@ export default function App() {
                     <div className="flex-1 min-w-0 py-1">
                       <h3 className="font-display font-semibold text-lg text-charcoal mb-1">{coworker.name}</h3>
 
-                      {coworker.mnemonic ? (
-                        <p className="text-sm text-charcoal-light leading-relaxed flex items-start gap-2">
-                          <svg className="w-4 h-4 text-dusty-rose flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                          </svg>
-                          {coworker.mnemonic}
-                        </p>
+                      {/* Mnemonic editing mode */}
+                      {editingMnemonicId === coworker.id ? (
+                        <div className="mt-2">
+                          <textarea
+                            value={customMnemonicText}
+                            onChange={(e) => setCustomMnemonicText(e.target.value)}
+                            placeholder="Enter your memory tip..."
+                            className="w-full px-3 py-2 input-warm rounded-lg text-sm resize-none"
+                            rows={2}
+                            autoFocus
+                          />
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleSaveCustomMnemonic(coworker.id)}
+                              disabled={saving || !customMnemonicText.trim()}
+                              className="px-3 py-1.5 bg-sage text-cream text-sm rounded-lg btn-lift disabled:bg-cream-dark disabled:text-warm-gray"
+                            >
+                              {saving ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              onClick={cancelEditingMnemonic}
+                              className="px-3 py-1.5 text-sm text-warm-gray hover:text-charcoal"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : coworker.mnemonic ? (
+                        <div>
+                          <p className="text-sm text-charcoal-light leading-relaxed flex items-start gap-2">
+                            <svg className="w-4 h-4 text-dusty-rose flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            {coworker.mnemonic}
+                          </p>
+                          <div className="flex gap-3 mt-2">
+                            <button
+                              onClick={() => startEditingMnemonic(coworker)}
+                              className="text-xs text-warm-gray hover:text-coral transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleGenerateMnemonic(coworker.id)}
+                              disabled={generatingMnemonicId === coworker.id}
+                              className="text-xs text-warm-gray hover:text-coral transition-colors"
+                            >
+                              {generatingMnemonicId === coworker.id ? 'Generating...' : 'Regenerate'}
+                            </button>
+                          </div>
+                        </div>
                       ) : (
-                        <button
-                          onClick={() => handleGenerateMnemonic(coworker.id)}
-                          disabled={generatingMnemonicId === coworker.id}
-                          className="text-sm text-coral hover:text-coral-dark disabled:text-warm-gray flex items-center gap-1.5 transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                          </svg>
-                          {generatingMnemonicId === coworker.id ? 'Generating...' : 'Generate memory tip'}
-                        </button>
+                        <div className="flex flex-col gap-1.5 mt-1">
+                          <button
+                            onClick={() => handleGenerateMnemonic(coworker.id)}
+                            disabled={generatingMnemonicId === coworker.id || !coworker.photo_url}
+                            className="text-sm text-coral hover:text-coral-dark disabled:text-warm-gray flex items-center gap-1.5 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                            </svg>
+                            {generatingMnemonicId === coworker.id ? 'Generating...' : 'Generate with AI'}
+                          </button>
+                          <button
+                            onClick={() => startEditingMnemonic(coworker)}
+                            className="text-sm text-sage hover:text-sage-light flex items-center gap-1.5 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            Write your own
+                          </button>
+                        </div>
                       )}
                     </div>
 
                     {/* Actions */}
                     <div className="flex flex-col justify-center gap-2">
-                      {coworker.mnemonic && (
-                        <button
-                          onClick={() => handleGenerateMnemonic(coworker.id)}
-                          disabled={generatingMnemonicId === coworker.id}
-                          className="text-xs text-warm-gray hover:text-coral transition-colors"
-                        >
-                          {generatingMnemonicId === coworker.id ? 'Generating...' : 'Regenerate'}
-                        </button>
-                      )}
                       <button
                         onClick={() => handleRemoveCoworker(coworker.id)}
                         className="text-xs text-warm-gray hover:text-coral transition-colors"
