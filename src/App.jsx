@@ -261,7 +261,7 @@ export default function App() {
       return (
         <div className="min-h-screen bg-cream grain-bg">
           <Header />
-          <div className="flex items-center justify-center p-6 pt-24">
+          <div className="flex items-center justify-center p-4 sm:p-6 pt-16 sm:pt-24">
             <div className="flex flex-col items-center gap-4">
               <div className="w-16 h-16 shimmer rounded-2xl" />
               <span className="text-warm-gray">Loading flashcards...</span>
@@ -275,13 +275,13 @@ export default function App() {
       return (
         <div className="min-h-screen bg-cream grain-bg">
           <Header />
-          <div className="flex items-center justify-center p-6 pt-24">
-            <div className="relative z-10 animate-in">
+          <div className="flex items-center justify-center p-4 sm:p-6 pt-12 sm:pt-24">
+            <div className="relative z-10 animate-in w-full max-w-md">
               {/* Decorative blurs */}
               <div className="absolute -top-12 -left-12 w-40 h-40 bg-coral/10 rounded-full blur-3xl" />
               <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-sage/10 rounded-full blur-3xl" />
 
-              <div className="relative bg-paper rounded-2xl shadow-[0_4px_24px_rgba(45,42,38,0.08)] p-10 max-w-md w-full text-center">
+              <div className="relative bg-paper rounded-2xl shadow-[0_4px_24px_rgba(45,42,38,0.08)] p-6 sm:p-10 text-center">
                 <div className="w-20 h-20 bg-cream rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-inner">
                   <svg className="w-10 h-10 text-coral" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
@@ -318,7 +318,7 @@ export default function App() {
       return (
         <div className="min-h-screen bg-cream grain-bg">
           <Header />
-          <div className="flex items-center justify-center p-6 pt-16">
+          <div className="flex items-center justify-center p-4 sm:p-6 pt-8 sm:pt-16">
             <div className="relative z-10 animate-in max-w-md w-full">
               {/* Decorative background elements */}
               <div className="absolute -top-16 -left-16 w-48 h-48 bg-sage/15 rounded-full blur-3xl" />
@@ -361,18 +361,18 @@ export default function App() {
                   </h1>
                   <p className="text-charcoal-light">
                     {isPerfect ? 'You know everyone!' :
-                     isGreat ? 'You're getting really good at this.' :
+                     isGreat ? "You're getting really good at this." :
                      isGood ? 'Keep practicing to improve.' :
                      'Practice makes perfect.'}
                   </p>
                 </div>
 
                 {/* Score display */}
-                <div className="p-8">
-                  <div className="bg-cream rounded-2xl p-6 mb-6">
+                <div className="p-6 sm:p-8">
+                  <div className="bg-cream rounded-2xl p-4 sm:p-6 mb-6">
                     {/* Big percentage */}
                     <div className="text-center mb-4">
-                      <div className={`font-display text-6xl font-bold ${
+                      <div className={`font-display text-5xl sm:text-6xl font-bold ${
                         isPerfect ? 'text-sage' :
                         isGreat ? 'text-sage' :
                         isGood ? 'text-dusty-rose' :
@@ -384,17 +384,17 @@ export default function App() {
                     </div>
 
                     {/* Breakdown */}
-                    <div className="flex justify-center gap-8 pt-4 border-t border-cream-dark">
+                    <div className="flex justify-center gap-6 sm:gap-8 pt-4 border-t border-cream-dark">
                       <div className="text-center">
-                        <div className="font-display text-2xl font-semibold text-sage">{stats.correct}</div>
+                        <div className="font-display text-xl sm:text-2xl font-semibold text-sage">{stats.correct}</div>
                         <div className="text-xs text-warm-gray uppercase tracking-wide">Correct</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-display text-2xl font-semibold text-coral">{stats.total - stats.correct}</div>
+                        <div className="font-display text-xl sm:text-2xl font-semibold text-coral">{stats.total - stats.correct}</div>
                         <div className="text-xs text-warm-gray uppercase tracking-wide">Missed</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-display text-2xl font-semibold text-charcoal">{stats.total}</div>
+                        <div className="font-display text-xl sm:text-2xl font-semibold text-charcoal">{stats.total}</div>
                         <div className="text-xs text-warm-gray uppercase tracking-wide">Total</div>
                       </div>
                     </div>
@@ -429,35 +429,35 @@ export default function App() {
     return (
       <div className="min-h-screen bg-cream grain-bg">
         <Header />
-        <div className="p-6 pt-8">
+        <div className="p-4 sm:p-6 pt-6 sm:pt-8">
           <div className="max-w-md mx-auto animate-in">
             {/* Stats Header */}
-            <div className="flex justify-between items-center mb-6">
-              <div className="text-sm">
-                {stats.total > 0 && (
-                  <span className="bg-paper px-4 py-2 rounded-full shadow-sm text-charcoal-light border border-cream-dark">
-                    <span className="text-sage font-semibold">{stats.correct}</span>
-                    <span className="text-warm-gray">/{stats.total}</span>
-                    <span className="text-warm-gray ml-1">({Math.round(stats.correct/stats.total*100)}%)</span>
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+              <div className="flex items-center justify-between sm:justify-start gap-3">
+                <div className="text-sm">
+                  {stats.total > 0 && (
+                    <span className="bg-paper px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-sm text-charcoal-light border border-cream-dark">
+                      <span className="text-sage font-semibold">{stats.correct}</span>
+                      <span className="text-warm-gray">/{stats.total}</span>
+                      <span className="text-warm-gray ml-1">({Math.round(stats.correct/stats.total*100)}%)</span>
+                    </span>
+                  )}
+                </div>
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value)}
-                  className="px-3 py-1.5 bg-paper border border-cream-dark rounded-lg text-sm text-charcoal focus:outline-none focus:border-coral/50 cursor-pointer"
+                  className="px-2 sm:px-3 py-1.5 bg-paper border border-cream-dark rounded-lg text-sm text-charcoal focus:outline-none focus:border-coral/50 cursor-pointer"
                 >
-                  <option value="first">First name only</option>
+                  <option value="first">First name</option>
                   <option value="full">Full name</option>
                 </select>
-                <button
-                  onClick={() => setMode('manage')}
-                  className="text-coral hover:text-coral-dark font-medium transition-colors"
-                >
-                  Manage Cards
-                </button>
               </div>
+              <button
+                onClick={() => setMode('manage')}
+                className="text-coral hover:text-coral-dark font-medium transition-colors text-sm sm:text-base"
+              >
+                Manage Cards
+              </button>
             </div>
 
             {/* Flashcard - Polaroid Style */}
@@ -596,33 +596,33 @@ export default function App() {
     return (
       <div className="min-h-screen bg-cream grain-bg">
         <Header />
-        <div className="p-6 pt-8">
+        <div className="p-4 sm:p-6 pt-6 sm:pt-8">
           <div className="max-w-2xl mx-auto animate-in">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
               <div>
-                <h1 className="font-display text-2xl font-semibold text-charcoal">Your Faces</h1>
+                <h1 className="font-display text-xl sm:text-2xl font-semibold text-charcoal">Your Faces</h1>
                 {draftCount > 0 && (
                   <p className="text-sm text-warm-gray mt-1">
                     {draftCount} draft{draftCount !== 1 ? 's' : ''} need{draftCount === 1 ? 's' : ''} photos
                   </p>
                 )}
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3">
                 <button
                   onClick={() => setMode('add')}
-                  className="bg-coral text-cream px-5 py-2.5 rounded-xl font-medium btn-lift flex items-center gap-2"
+                  className="bg-coral text-cream px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium btn-lift flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base flex-1 sm:flex-none justify-center"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Add New
+                  <span>Add</span>
                 </button>
                 {flashcards.length > 0 && (
                   <button
                     onClick={() => { setMode('practice'); setStats({ correct: 0, total: 0 }); }}
-                    className="bg-sage text-cream px-5 py-2.5 rounded-xl font-medium btn-lift flex items-center gap-2"
+                    className="bg-sage text-cream px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium btn-lift flex items-center gap-1.5 sm:gap-2 text-sm sm:text-base flex-1 sm:flex-none justify-center"
                   >
-                    Practice
+                    <span>Practice</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
@@ -650,9 +650,9 @@ export default function App() {
             ) : (
               <div className="space-y-4 stagger-children">
                 {flashcards.map((coworker, index) => (
-                  <div key={coworker.id} className={`bg-paper rounded-2xl shadow-sm p-5 flex gap-5 hover:shadow-md transition-shadow ${!coworker.photo_url ? 'border-2 border-dashed border-cream-dark' : ''}`} style={{ animationDelay: `${index * 50}ms` }}>
+                  <div key={coworker.id} className={`bg-paper rounded-2xl shadow-sm p-4 sm:p-5 flex gap-3 sm:gap-5 hover:shadow-md transition-shadow ${!coworker.photo_url ? 'border-2 border-dashed border-cream-dark' : ''}`} style={{ animationDelay: `${index * 50}ms` }}>
                     {/* Photo */}
-                    <div className="w-24 h-24 bg-cream-dark rounded-xl flex-shrink-0 overflow-hidden relative group">
+                    <div className="w-16 h-16 sm:w-24 sm:h-24 bg-cream-dark rounded-xl flex-shrink-0 overflow-hidden relative group">
                       {/* Draft badge */}
                       {!coworker.photo_url && !fetchingImages.has(coworker.id) && (
                         <span className="absolute top-1 left-1 z-10 px-2 py-0.5 bg-dusty-rose text-cream text-xs font-medium rounded-full">
@@ -754,7 +754,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-cream grain-bg">
         <Header />
-        <div className="p-6 pt-8">
+        <div className="p-4 sm:p-6 pt-6 sm:pt-8">
           <div className="max-w-md mx-auto animate-in">
             <button
               onClick={() => setMode('manage')}
