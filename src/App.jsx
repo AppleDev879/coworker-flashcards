@@ -16,6 +16,7 @@ export default function App() {
     updatePhoto,
     updateFlashcard,
     deleteFlashcard,
+    addNickname,
     generateMnemonic,
     refetch
   } = useFlashcards()
@@ -36,6 +37,14 @@ export default function App() {
   const [importText, setImportText] = useState('')
   const [importing, setImporting] = useState(false)
   const [fetchingImages, setFetchingImages] = useState(new Set()) // Track cards with images being fetched
+
+  // Practice mode enhancements
+  const [lastGuess, setLastGuess] = useState('') // Store the guess that was checked
+  const [correctionInput, setCorrectionInput] = useState('')
+  const [correctionComplete, setCorrectionComplete] = useState(false)
+  const [editingPracticeMnemonic, setEditingPracticeMnemonic] = useState(false)
+  const [practiceMnemonicText, setPracticeMnemonicText] = useState('')
+  const [addingNickname, setAddingNickname] = useState(false)
 
   // Parse import text for preview (sync, no LLM)
   const parsedPreview = useMemo(() => parseNamesSync(importText), [importText])
@@ -243,22 +252,39 @@ export default function App() {
     const guessLower = guess.toLowerCase().trim()
     const fullName = currentCoworker.name.toLowerCase().trim()
     const firstName = fullName.split(' ')[0]
+    const nicknames = (currentCoworker.nicknames || []).map(n => n.toLowerCase())
 
     const target = difficulty === 'first' ? firstName : fullName
     const isCorrect = guessLower === target
+    const isNicknameMatch = !isCorrect && difficulty === 'first' && nicknames.includes(guessLower)
 
-    setFeedback(isCorrect ? 'correct' : 'incorrect')
+    setLastGuess(guess.trim())
+    setCorrectionInput('')
+    setCorrectionComplete(false)
+    setEditingPracticeMnemonic(false)
+    setPracticeMnemonicText('')
+    setAddingNickname(false)
+
+    if (isCorrect || isNicknameMatch) {
+      setFeedback(isNicknameMatch ? 'nickname' : 'correct')
+      setStats(prev => ({ correct: prev.correct + 1, total: prev.total + 1 }))
+    } else {
+      setFeedback('incorrect')
+      setStats(prev => ({ ...prev, total: prev.total + 1 }))
+    }
     setShowAnswer(true)
-    setStats(prev => ({
-      correct: prev.correct + (isCorrect ? 1 : 0),
-      total: prev.total + 1
-    }))
   }
 
   const nextCard = () => {
     setGuess('')
     setFeedback(null)
     setShowAnswer(false)
+    setLastGuess('')
+    setCorrectionInput('')
+    setCorrectionComplete(false)
+    setEditingPracticeMnemonic(false)
+    setPracticeMnemonicText('')
+    setAddingNickname(false)
     setCurrentIndex((currentIndex + 1) % practiceCards.length)
   }
 
@@ -280,6 +306,109 @@ export default function App() {
     setStats({ correct: 0, total: 0 })
     shuffleCards() // This resets index, guess, feedback, showAnswer and shuffles
   }
+
+  // Get the target name for correction typing
+  const getTargetName = () => {
+    if (!currentCoworker) return ''
+    const fullName = currentCoworker.name.trim()
+    const firstName = fullName.split(' ')[0]
+    return difficulty === 'first' ? firstName : fullName
+  }
+
+  // Check if correction input matches
+  const checkCorrection = (input) => {
+    const target = getTargetName().toLowerCase()
+    return input.toLowerCase().trim() === target
+  }
+
+  // Handle correction input change
+  const handleCorrectionChange = (value) => {
+    setCorrectionInput(value)
+    setCorrectionComplete(checkCorrection(value))
+  }
+
+  // Handle adding nickname
+  const handleAddNickname = async () => {
+    if (!lastGuess || !currentCoworker) return
+    setAddingNickname(true)
+    try {
+      await addNickname(currentCoworker.id, lastGuess)
+    } catch (err) {
+      console.error('Failed to add nickname:', err)
+    } finally {
+      setAddingNickname(false)
+    }
+  }
+
+  // Handle saving practice mnemonic
+  const handleSavePracticeMnemonic = async () => {
+    if (!practiceMnemonicText.trim() || !currentCoworker) return
+    setSaving(true)
+    try {
+      await updateFlashcard(currentCoworker.id, { mnemonic: practiceMnemonicText.trim() })
+      setEditingPracticeMnemonic(false)
+      setPracticeMnemonicText('')
+    } catch (err) {
+      console.error('Failed to save mnemonic:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Handle generating practice mnemonic
+  const handleGeneratePracticeMnemonic = async () => {
+    if (!currentCoworker) return
+    setGeneratingMnemonicId(currentCoworker.id)
+    try {
+      await generateMnemonic(currentCoworker.id)
+    } catch (err) {
+      console.error('Failed to generate mnemonic:', err)
+    } finally {
+      setGeneratingMnemonicId(null)
+    }
+  }
+
+  // Keyboard shortcuts for practice mode
+  useEffect(() => {
+    if (mode !== 'practice' || !currentCoworker || isSessionComplete) return
+
+    const handleKeyDown = (e) => {
+      // Don't trigger if typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        // But allow Enter in correction input when complete
+        if (e.key === 'Enter' && e.target.dataset.correctionInput && correctionComplete) {
+          e.preventDefault()
+          nextCard()
+        }
+        return
+      }
+
+      if (showAnswer) {
+        // After answer shown
+        if (e.key === 'Enter') {
+          // Only allow next if correct, nickname match, or correction complete (or skipping)
+          if (feedback === 'correct' || feedback === 'nickname' || correctionComplete) {
+            e.preventDefault()
+            nextCard()
+          }
+        }
+      } else {
+        // Before answer shown
+        if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault()
+          setShowAnswer(true)
+          setFeedback('incorrect')
+          setLastGuess('')
+          setCorrectionInput('')
+          setCorrectionComplete(false)
+          setStats(prev => ({ ...prev, total: prev.total + 1 }))
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [mode, showAnswer, feedback, correctionComplete, currentCoworker, isSessionComplete])
 
   // Check if practice session is complete
   const isSessionComplete = stats.total > 0 && stats.total >= practiceCards.length
@@ -540,6 +669,9 @@ export default function App() {
                         onClick={() => {
                           setShowAnswer(true)
                           setFeedback('incorrect')
+                          setLastGuess('')
+                          setCorrectionInput('')
+                          setCorrectionComplete(false)
                           setStats(prev => ({ ...prev, total: prev.total + 1 }))
                         }}
                         className="px-5 py-3 border-2 border-cream-dark rounded-xl text-charcoal-light hover:bg-cream-dark transition-colors"
@@ -547,12 +679,23 @@ export default function App() {
                         Reveal
                       </button>
                     </div>
+                    {/* Keyboard hints - before answer */}
+                    <div className="flex justify-center gap-4 pt-2 text-xs text-warm-gray">
+                      <span className="flex items-center gap-1.5">
+                        <kbd className="px-1.5 py-0.5 bg-cream-dark rounded text-charcoal-light font-mono">Enter</kbd>
+                        <span>check</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <kbd className="px-1.5 py-0.5 bg-cream-dark rounded text-charcoal-light font-mono">R</kbd>
+                        <span>reveal</span>
+                      </span>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {/* Result */}
                     <div className={`text-center p-5 rounded-xl ${
-                      feedback === 'correct'
+                      feedback === 'correct' || feedback === 'nickname'
                         ? 'bg-sage/10 border-2 border-sage/30'
                         : feedback === 'incorrect'
                         ? 'bg-coral/10 border-2 border-coral/30'
@@ -566,6 +709,17 @@ export default function App() {
                           Correct!
                         </div>
                       )}
+                      {feedback === 'nickname' && (
+                        <div className="text-sage font-medium mb-2 flex items-center justify-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Correct!
+                          <span className="ml-1 px-2 py-0.5 bg-sage/20 text-sage text-xs rounded-full">
+                            via "{lastGuess}"
+                          </span>
+                        </div>
+                      )}
                       {feedback === 'incorrect' && (
                         <div className="text-coral font-medium mb-2 flex items-center justify-center gap-2">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -577,28 +731,152 @@ export default function App() {
                       <div className="font-display text-2xl font-semibold text-charcoal">{currentCoworker.name}</div>
                     </div>
 
-                    {/* Mnemonic */}
-                    {currentCoworker.mnemonic && (
+                    {/* Add as nickname button - only show for wrong guesses that look like nicknames */}
+                    {feedback === 'incorrect' && lastGuess && difficulty === 'first' && !currentCoworker.nicknames?.some(n => n.toLowerCase() === lastGuess.toLowerCase()) && (
+                      <button
+                        onClick={handleAddNickname}
+                        disabled={addingNickname}
+                        className="w-full py-2.5 px-4 bg-dusty-rose/10 border border-dusty-rose/30 rounded-xl text-sm text-dusty-rose hover:bg-dusty-rose/20 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        {addingNickname ? 'Adding...' : `Add "${lastGuess}" as nickname`}
+                      </button>
+                    )}
+
+                    {/* Mnemonic section with edit capability */}
+                    {editingPracticeMnemonic ? (
                       <div className="bg-dusty-rose/10 border border-dusty-rose/30 rounded-xl p-4">
-                        <div className="text-xs font-semibold text-dusty-rose uppercase tracking-wide mb-2 flex items-center gap-2">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                          </svg>
-                          Memory Tip
+                        <textarea
+                          value={practiceMnemonicText}
+                          onChange={(e) => setPracticeMnemonicText(e.target.value)}
+                          placeholder="Enter your memory tip..."
+                          className="w-full px-3 py-2 bg-paper border border-cream-dark rounded-lg text-sm resize-none focus:outline-none focus:border-dusty-rose"
+                          rows={2}
+                          autoFocus
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={handleSavePracticeMnemonic}
+                            disabled={saving || !practiceMnemonicText.trim()}
+                            className="px-3 py-1.5 bg-sage text-cream text-sm rounded-lg btn-lift disabled:bg-cream-dark disabled:text-warm-gray"
+                          >
+                            {saving ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            onClick={() => { setEditingPracticeMnemonic(false); setPracticeMnemonicText(''); }}
+                            className="px-3 py-1.5 text-sm text-warm-gray hover:text-charcoal"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : currentCoworker.mnemonic ? (
+                      <div className="bg-dusty-rose/10 border border-dusty-rose/30 rounded-xl p-4">
+                        <div className="text-xs font-semibold text-dusty-rose uppercase tracking-wide mb-2 flex items-center justify-between">
+                          <span className="flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            Memory Tip
+                          </span>
+                          <button
+                            onClick={() => { setEditingPracticeMnemonic(true); setPracticeMnemonicText(currentCoworker.mnemonic); }}
+                            className="text-dusty-rose/70 hover:text-dusty-rose text-xs font-normal normal-case"
+                          >
+                            Edit
+                          </button>
                         </div>
                         <div className="text-charcoal-light leading-relaxed">{currentCoworker.mnemonic}</div>
                       </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setEditingPracticeMnemonic(true); setPracticeMnemonicText(''); }}
+                          className="flex-1 py-2.5 px-4 border border-cream-dark rounded-xl text-sm text-charcoal-light hover:bg-cream transition-colors flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                          Add Tip
+                        </button>
+                        <button
+                          onClick={handleGeneratePracticeMnemonic}
+                          disabled={generatingMnemonicId === currentCoworker.id}
+                          className="flex-1 py-2.5 px-4 border border-cream-dark rounded-xl text-sm text-charcoal-light hover:bg-cream transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                          </svg>
+                          {generatingMnemonicId === currentCoworker.id ? 'Generating...' : 'Generate AI'}
+                        </button>
+                      </div>
                     )}
 
+                    {/* Correction typing for wrong answers */}
+                    {feedback === 'incorrect' && (
+                      <div className="bg-cream rounded-xl p-4">
+                        <label className="block text-sm text-charcoal-light mb-2">
+                          Type "<span className="font-semibold text-charcoal">{getTargetName()}</span>" to continue:
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={correctionInput}
+                            onChange={(e) => handleCorrectionChange(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && correctionComplete && nextCard()}
+                            data-correction-input="true"
+                            placeholder={getTargetName()}
+                            className={`w-full px-4 py-2.5 rounded-lg text-charcoal font-medium transition-colors ${
+                              correctionComplete
+                                ? 'bg-sage/10 border-2 border-sage/50'
+                                : 'bg-paper border-2 border-cream-dark focus:border-coral/50'
+                            } focus:outline-none`}
+                            autoFocus
+                          />
+                          {correctionComplete && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sage">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={nextCard}
+                          className="mt-2 text-xs text-warm-gray hover:text-charcoal-light transition-colors"
+                        >
+                          skip →
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Next card button */}
                     <button
                       onClick={nextCard}
-                      className="w-full bg-coral text-cream py-3 rounded-xl font-medium btn-lift flex items-center justify-center gap-2"
+                      disabled={feedback === 'incorrect' && !correctionComplete}
+                      className={`w-full py-3 rounded-xl font-medium btn-lift flex items-center justify-center gap-2 ${
+                        feedback === 'incorrect' && !correctionComplete
+                          ? 'bg-cream-dark text-warm-gray cursor-not-allowed'
+                          : 'bg-coral text-cream'
+                      }`}
                     >
                       Next Card
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
+
+                    {/* Keyboard hints - after answer */}
+                    {(feedback === 'correct' || feedback === 'nickname' || correctionComplete) && (
+                      <div className="flex justify-center pt-1 text-xs text-warm-gray">
+                        <span className="flex items-center gap-1.5">
+                          <kbd className="px-1.5 py-0.5 bg-cream-dark rounded text-charcoal-light font-mono">Enter</kbd>
+                          <span>next card</span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

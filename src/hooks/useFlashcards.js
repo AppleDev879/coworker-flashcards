@@ -167,6 +167,21 @@ export function useFlashcards() {
     setFlashcards(prev => prev.filter(card => card.id !== id))
   }
 
+  // Add a nickname to a flashcard
+  const addNickname = async (id, nickname) => {
+    const flashcard = flashcards.find(f => f.id === id)
+    const currentNicknames = flashcard?.nicknames || []
+
+    // Don't add duplicates
+    if (currentNicknames.some(n => n.toLowerCase() === nickname.toLowerCase())) {
+      return flashcard
+    }
+
+    return updateFlashcard(id, {
+      nicknames: [...currentNicknames, nickname.trim()]
+    })
+  }
+
   // Generate mnemonic via Edge Function
   const generateMnemonic = async (id) => {
     const flashcard = flashcards.find(f => f.id === id)
@@ -202,6 +217,7 @@ export function useFlashcards() {
     updateFlashcard,
     updatePhoto,
     deleteFlashcard,
+    addNickname,
     generateMnemonic,
     refetch: fetchFlashcards
   }
