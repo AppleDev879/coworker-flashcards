@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuth } from './context/AuthContext'
 import { useFlashcards } from './hooks/useFlashcards'
+import { supabase } from './lib/supabase'
+import { parseNames, parseNamesSync } from './utils/parseNames'
 import LoginPage from './components/LoginPage'
 import Header from './components/Header'
 
@@ -10,9 +12,11 @@ export default function App() {
     flashcards,
     loading: dataLoading,
     addFlashcard,
+    addFlashcardsBatch,
     updatePhoto,
     deleteFlashcard,
-    generateMnemonic
+    generateMnemonic,
+    refetch
   } = useFlashcards()
 
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -22,8 +26,18 @@ export default function App() {
   const [mode, setMode] = useState('practice')
   const [stats, setStats] = useState({ correct: 0, total: 0 })
   const [newCoworker, setNewCoworker] = useState({ name: '', photoFile: null, photoPreview: null })
-  const [generatingMnemonic, setGeneratingMnemonic] = useState(false)
+  const [generatingMnemonicId, setGeneratingMnemonicId] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [fetchingImages, setFetchingImages] = useState(new Set()) // Track cards with images being fetched
+
+  // Parse import text for preview (sync, no LLM)
+  const parsedPreview = useMemo(() => parseNamesSync(importText), [importText])
+
+  // Filter cards with photos for practice mode
+  const practiceCards = useMemo(() => flashcards.filter(c => c.photo_url), [flashcards])
+  const draftCount = flashcards.length - practiceCards.length
 
   // Show loading while checking auth
   if (authLoading) {
@@ -44,7 +58,7 @@ export default function App() {
     return <LoginPage />
   }
 
-  const currentCoworker = flashcards[currentIndex]
+  const currentCoworker = practiceCards[currentIndex]
 
   const handleFileUpload = (e, isEditing = false, editId = null) => {
     const file = e.target.files[0]
@@ -107,15 +121,82 @@ export default function App() {
     }
   }
 
+  const handleClearAll = async () => {
+    if (!confirm(`Are you sure you want to delete all ${flashcards.length} faces? This cannot be undone.`)) {
+      return
+    }
+
+    try {
+      await Promise.all(flashcards.map(card => deleteFlashcard(card.id)))
+      setCurrentIndex(0)
+    } catch (err) {
+      console.error('Failed to clear all:', err)
+      alert('Failed to clear all. Please try again.')
+    }
+  }
+
   const handleGenerateMnemonic = async (id) => {
-    setGeneratingMnemonic(true)
+    setGeneratingMnemonicId(id)
     try {
       await generateMnemonic(id)
     } catch (err) {
       console.error('Failed to generate mnemonic:', err)
       alert(err.message || 'Failed to generate mnemonic. Please try again.')
     } finally {
-      setGeneratingMnemonic(false)
+      setGeneratingMnemonicId(null)
+    }
+  }
+
+  const handleBatchImport = async () => {
+    if (parsedPreview.names.length === 0 && !parsedPreview.needsLLM) return
+
+    setImporting(true)
+    try {
+      // Use full async parser (includes LLM fallback if needed)
+      const { names, imageUrls } = await parseNames(importText)
+      if (names.length === 0) {
+        alert('No names found in the input.')
+        return
+      }
+
+      // Bulk insert all names
+      const newCards = await addFlashcardsBatch(names)
+
+      // Collect cards that have image URLs to fetch
+      const cardsWithImages = newCards.filter(card => imageUrls[card.name])
+      const cardIdsWithImages = new Set(cardsWithImages.map(card => card.id))
+
+      setImportText('')
+      setMode('manage')
+
+      // Start fetching images and track progress
+      if (cardsWithImages.length > 0) {
+        setFetchingImages(cardIdsWithImages)
+
+        const fetchPromises = cardsWithImages.map(async (card) => {
+          try {
+            await supabase.functions.invoke('fetch-and-store-image', {
+              body: { imageUrl: imageUrls[card.name], flashcardId: card.id, userId: user.id }
+            })
+          } catch (e) {
+            // Silently fail individual fetches
+          } finally {
+            setFetchingImages(prev => {
+              const next = new Set(prev)
+              next.delete(card.id)
+              return next
+            })
+          }
+        })
+
+        // Refetch flashcards when all done to get updated photo URLs
+        Promise.all(fetchPromises).then(() => refetch())
+      }
+    } catch (err) {
+      console.error('Failed to import:', err)
+      alert('Failed to import names. Please try again.')
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -133,7 +214,7 @@ export default function App() {
     setGuess('')
     setFeedback(null)
     setShowAnswer(false)
-    setCurrentIndex((currentIndex + 1) % flashcards.length)
+    setCurrentIndex((currentIndex + 1) % practiceCards.length)
   }
 
   const shuffleCards = () => {
@@ -159,7 +240,7 @@ export default function App() {
       )
     }
 
-    if (flashcards.length === 0) {
+    if (practiceCards.length === 0) {
       return (
         <div className="min-h-screen bg-cream grain-bg">
           <Header />
@@ -175,13 +256,19 @@ export default function App() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
                   </svg>
                 </div>
-                <h1 className="font-display text-2xl font-semibold text-charcoal mb-3">No faces yet!</h1>
-                <p className="text-charcoal-light mb-8">Add your coworkers to start learning their names.</p>
+                <h1 className="font-display text-2xl font-semibold text-charcoal mb-3">
+                  {draftCount > 0 ? 'No cards ready to practice' : 'No faces yet!'}
+                </h1>
+                <p className="text-charcoal-light mb-8">
+                  {draftCount > 0
+                    ? `You have ${draftCount} draft${draftCount > 1 ? 's' : ''} that need${draftCount === 1 ? 's' : ''} photos.`
+                    : 'Add your coworkers to start learning their names.'}
+                </p>
                 <button
-                  onClick={() => setMode('add')}
+                  onClick={() => setMode(draftCount > 0 ? 'manage' : 'add')}
                   className="bg-coral text-cream px-8 py-4 rounded-xl font-medium btn-lift"
                 >
-                  Add Your First Face
+                  {draftCount > 0 ? 'Add Photos to Drafts' : 'Add Your First Face'}
                 </button>
               </div>
             </div>
@@ -236,7 +323,7 @@ export default function App() {
               {/* Card Info */}
               <div className="pt-4 pb-2 text-center">
                 <span className="text-xs font-medium text-warm-gray tracking-wide uppercase">
-                  Card {currentIndex + 1} of {flashcards.length}
+                  Card {currentIndex + 1} of {practiceCards.length}
                 </span>
               </div>
 
@@ -349,7 +436,14 @@ export default function App() {
         <div className="p-6 pt-8">
           <div className="max-w-2xl mx-auto animate-in">
             <div className="flex justify-between items-center mb-8">
-              <h1 className="font-display text-2xl font-semibold text-charcoal">Your Faces</h1>
+              <div>
+                <h1 className="font-display text-2xl font-semibold text-charcoal">Your Faces</h1>
+                {draftCount > 0 && (
+                  <p className="text-sm text-warm-gray mt-1">
+                    {draftCount} draft{draftCount !== 1 ? 's' : ''} need{draftCount === 1 ? 's' : ''} photos
+                  </p>
+                )}
+              </div>
               <div className="flex gap-3">
                 <button
                   onClick={() => setMode('add')}
@@ -392,10 +486,22 @@ export default function App() {
               </div>
             ) : (
               <div className="space-y-4 stagger-children">
-                {flashcards.map((coworker) => (
-                  <div key={coworker.id} className="bg-paper rounded-2xl shadow-sm p-5 flex gap-5 hover:shadow-md transition-shadow">
+                {flashcards.map((coworker, index) => (
+                  <div key={coworker.id} className={`bg-paper rounded-2xl shadow-sm p-5 flex gap-5 hover:shadow-md transition-shadow ${!coworker.photo_url ? 'border-2 border-dashed border-cream-dark' : ''}`} style={{ animationDelay: `${index * 50}ms` }}>
                     {/* Photo */}
                     <div className="w-24 h-24 bg-cream-dark rounded-xl flex-shrink-0 overflow-hidden relative group">
+                      {/* Draft badge */}
+                      {!coworker.photo_url && !fetchingImages.has(coworker.id) && (
+                        <span className="absolute top-1 left-1 z-10 px-2 py-0.5 bg-dusty-rose text-cream text-xs font-medium rounded-full">
+                          Draft
+                        </span>
+                      )}
+                      {/* Fetching spinner */}
+                      {fetchingImages.has(coworker.id) && (
+                        <div className="absolute inset-0 z-10 bg-cream-dark flex items-center justify-center">
+                          <div className="w-8 h-8 border-2 border-coral border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
                       {coworker.photo_url ? (
                         <img src={coworker.photo_url} alt={coworker.name} className="w-full h-full object-cover" />
                       ) : (
@@ -431,13 +537,13 @@ export default function App() {
                       ) : (
                         <button
                           onClick={() => handleGenerateMnemonic(coworker.id)}
-                          disabled={generatingMnemonic}
+                          disabled={generatingMnemonicId === coworker.id}
                           className="text-sm text-coral hover:text-coral-dark disabled:text-warm-gray flex items-center gap-1.5 transition-colors"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                           </svg>
-                          {generatingMnemonic ? 'Generating...' : 'Generate memory tip'}
+                          {generatingMnemonicId === coworker.id ? 'Generating...' : 'Generate memory tip'}
                         </button>
                       )}
                     </div>
@@ -447,10 +553,10 @@ export default function App() {
                       {coworker.mnemonic && (
                         <button
                           onClick={() => handleGenerateMnemonic(coworker.id)}
-                          disabled={generatingMnemonic}
+                          disabled={generatingMnemonicId === coworker.id}
                           className="text-xs text-warm-gray hover:text-coral transition-colors"
                         >
-                          Regenerate
+                          {generatingMnemonicId === coworker.id ? 'Generating...' : 'Regenerate'}
                         </button>
                       )}
                       <button
@@ -462,6 +568,16 @@ export default function App() {
                     </div>
                   </div>
                 ))}
+
+                {/* Clear All Button */}
+                <div className="pt-8 mt-4 border-t border-cream-dark">
+                  <button
+                    onClick={handleClearAll}
+                    className="w-full py-3 text-sm text-warm-gray hover:text-coral transition-colors"
+                  >
+                    Clear All
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -540,6 +656,66 @@ export default function App() {
                 className="w-full bg-coral text-cream py-4 rounded-xl font-medium btn-lift disabled:bg-cream-dark disabled:text-warm-gray disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
               >
                 {saving ? 'Adding...' : 'Add Face'}
+              </button>
+            </div>
+
+            {/* Batch Import Section */}
+            <div className="mt-8 bg-paper rounded-2xl shadow-[0_4px_24px_rgba(45,42,38,0.08)] p-8">
+              <h2 className="font-display text-xl font-semibold text-charcoal mb-2">
+                Import Multiple Names
+              </h2>
+              <p className="text-sm text-charcoal-light mb-4">
+                Paste a list of names (one per line, comma-separated, or JSON)
+              </p>
+
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder={`John Smith\nJane Doe\nMike Johnson\n\n— or JSON —\n[{"name": "John", "photo": "https://..."}]`}
+                className="w-full h-40 px-4 py-3 input-warm rounded-xl text-charcoal placeholder:text-warm-gray/40 font-mono text-sm resize-none"
+              />
+
+              {(parsedPreview.names.length > 0 || parsedPreview.needsLLM) && (
+                <div className="mt-4 p-4 bg-cream rounded-xl">
+                  {parsedPreview.names.length > 0 ? (
+                    <>
+                      <div className="text-sm text-charcoal-light mb-2">
+                        Found {parsedPreview.names.length} name{parsedPreview.names.length !== 1 ? 's' : ''}:
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {parsedPreview.names.slice(0, 10).map((name, i) => (
+                          <span key={i} className="px-3 py-1 bg-paper rounded-full text-sm text-charcoal shadow-sm">
+                            {name}
+                          </span>
+                        ))}
+                        {parsedPreview.names.length > 10 && (
+                          <span className="px-3 py-1 text-sm text-warm-gray">
+                            +{parsedPreview.names.length - 10} more
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-charcoal-light flex items-center gap-2">
+                      <svg className="w-4 h-4 text-dusty-rose" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Complex format detected — AI will extract names on import
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={handleBatchImport}
+                disabled={(parsedPreview.names.length === 0 && !parsedPreview.needsLLM) || importing}
+                className="mt-4 w-full bg-sage text-cream py-4 rounded-xl font-medium btn-lift disabled:bg-cream-dark disabled:text-warm-gray disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+              >
+                {importing
+                  ? 'Importing...'
+                  : parsedPreview.needsLLM && parsedPreview.names.length === 0
+                  ? 'Import with AI'
+                  : `Import ${parsedPreview.names.length} Name${parsedPreview.names.length !== 1 ? 's' : ''} as Drafts`}
               </button>
             </div>
           </div>

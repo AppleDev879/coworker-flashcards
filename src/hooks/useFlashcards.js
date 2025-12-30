@@ -87,6 +87,29 @@ export function useFlashcards() {
     return data
   }
 
+  // Add multiple flashcards at once (for batch import)
+  const addFlashcardsBatch = async (names) => {
+    if (!user) throw new Error('Not authenticated')
+    if (!names || names.length === 0) return []
+
+    const records = names.map(name => ({
+      user_id: user.id,
+      name: name.trim(),
+      photo_url: null,
+      mnemonic: ''
+    }))
+
+    const { data, error: insertError } = await supabase
+      .from('flashcards')
+      .insert(records)
+      .select()
+
+    if (insertError) throw insertError
+
+    setFlashcards(prev => [...(data || []), ...prev])
+    return data || []
+  }
+
   // Update a flashcard (name, photo, or mnemonic)
   const updateFlashcard = async (id, updates) => {
     const { data, error: updateError } = await supabase
@@ -175,6 +198,7 @@ export function useFlashcards() {
     loading,
     error,
     addFlashcard,
+    addFlashcardsBatch,
     updateFlashcard,
     updatePhoto,
     deleteFlashcard,
