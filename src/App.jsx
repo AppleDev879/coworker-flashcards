@@ -59,6 +59,60 @@ export default function App() {
     setCurrentIndex(0)
   }, [practiceCards.length])
 
+  // Check if practice session is complete (needed for keyboard effect)
+  const isSessionComplete = stats.total > 0 && stats.total >= practiceCards.length
+
+  // Use shuffled order if available, otherwise sequential
+  const actualCardIndex = shuffledIndices.length > 0 ? shuffledIndices[currentIndex] : currentIndex
+  const currentCoworker = practiceCards[actualCardIndex]
+
+  // Keyboard shortcuts for practice mode - must be before early returns
+  useEffect(() => {
+    if (mode !== 'practice' || !currentCoworker || isSessionComplete) return
+
+    const handleKeyDown = (e) => {
+      // Don't trigger if typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return
+      }
+
+      if (showAnswer) {
+        // After answer shown
+        if (e.key === 'Enter') {
+          // Only allow next if correct, nickname match, or correction complete
+          if (feedback === 'correct' || feedback === 'nickname' || correctionComplete) {
+            e.preventDefault()
+            // Inline the nextCard logic to avoid stale closure
+            setGuess('')
+            setFeedback(null)
+            setShowAnswer(false)
+            setLastGuess('')
+            setCorrectionInput('')
+            setCorrectionComplete(false)
+            setEditingPracticeMnemonic(false)
+            setPracticeMnemonicText('')
+            setAddingNickname(false)
+            setCurrentIndex(prev => (prev + 1) % practiceCards.length)
+          }
+        }
+      } else {
+        // Before answer shown
+        if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault()
+          setShowAnswer(true)
+          setFeedback('incorrect')
+          setLastGuess('')
+          setCorrectionInput('')
+          setCorrectionComplete(false)
+          setStats(prev => ({ ...prev, total: prev.total + 1 }))
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [mode, showAnswer, feedback, correctionComplete, currentCoworker, isSessionComplete, practiceCards.length])
+
   // Show loading while checking auth
   if (authLoading) {
     return (
@@ -77,10 +131,6 @@ export default function App() {
   if (!user) {
     return <LoginPage />
   }
-
-  // Use shuffled order if available, otherwise sequential
-  const actualCardIndex = shuffledIndices.length > 0 ? shuffledIndices[currentIndex] : currentIndex
-  const currentCoworker = practiceCards[actualCardIndex]
 
   const handleFileUpload = (e, isEditing = false, editId = null) => {
     const file = e.target.files[0]
@@ -367,51 +417,6 @@ export default function App() {
       setGeneratingMnemonicId(null)
     }
   }
-
-  // Check if practice session is complete
-  const isSessionComplete = stats.total > 0 && stats.total >= practiceCards.length
-
-  // Keyboard shortcuts for practice mode
-  useEffect(() => {
-    if (mode !== 'practice' || !currentCoworker || isSessionComplete) return
-
-    const handleKeyDown = (e) => {
-      // Don't trigger if typing in an input
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-        // But allow Enter in correction input when complete
-        if (e.key === 'Enter' && e.target.dataset.correctionInput && correctionComplete) {
-          e.preventDefault()
-          nextCard()
-        }
-        return
-      }
-
-      if (showAnswer) {
-        // After answer shown
-        if (e.key === 'Enter') {
-          // Only allow next if correct, nickname match, or correction complete (or skipping)
-          if (feedback === 'correct' || feedback === 'nickname' || correctionComplete) {
-            e.preventDefault()
-            nextCard()
-          }
-        }
-      } else {
-        // Before answer shown
-        if (e.key === 'r' || e.key === 'R') {
-          e.preventDefault()
-          setShowAnswer(true)
-          setFeedback('incorrect')
-          setLastGuess('')
-          setCorrectionInput('')
-          setCorrectionComplete(false)
-          setStats(prev => ({ ...prev, total: prev.total + 1 }))
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [mode, showAnswer, feedback, correctionComplete, currentCoworker, isSessionComplete])
 
   // Practice Mode
   if (mode === 'practice') {
