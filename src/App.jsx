@@ -383,6 +383,8 @@ export default function App() {
     setAddingNickname(true)
     try {
       await addNickname(currentCoworker.id, lastGuess)
+      // Skip correction typing after adding nickname
+      setCorrectionComplete(true)
     } catch (err) {
       console.error('Failed to add nickname:', err)
     } finally {
@@ -684,17 +686,6 @@ export default function App() {
                         Reveal
                       </button>
                     </div>
-                    {/* Keyboard hints - before answer */}
-                    <div className="flex justify-center gap-4 pt-2 text-xs text-warm-gray">
-                      <span className="flex items-center gap-1.5">
-                        <kbd className="px-1.5 py-0.5 bg-cream-dark rounded text-charcoal-light font-mono">Enter</kbd>
-                        <span>check</span>
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <kbd className="px-1.5 py-0.5 bg-cream-dark rounded text-charcoal-light font-mono">R</kbd>
-                        <span>reveal</span>
-                      </span>
-                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -795,28 +786,16 @@ export default function App() {
                         </div>
                         <div className="text-charcoal-light leading-relaxed">{currentCoworker.mnemonic}</div>
                       </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => { setEditingPracticeMnemonic(true); setPracticeMnemonicText(''); }}
-                          className="flex-1 py-2.5 px-4 border border-cream-dark rounded-xl text-sm text-charcoal-light hover:bg-cream transition-colors flex items-center justify-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                          Add Tip
-                        </button>
-                        <button
-                          onClick={handleGeneratePracticeMnemonic}
-                          disabled={generatingMnemonicId === currentCoworker.id}
-                          className="flex-1 py-2.5 px-4 border border-cream-dark rounded-xl text-sm text-charcoal-light hover:bg-cream transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                          </svg>
-                          {generatingMnemonicId === currentCoworker.id ? 'Generating...' : 'Generate AI'}
-                        </button>
-                      </div>
+                    ) : feedback === 'incorrect' && (
+                      <button
+                        onClick={() => { setEditingPracticeMnemonic(true); setPracticeMnemonicText(''); }}
+                        className="w-full py-2.5 px-4 border border-cream-dark rounded-xl text-sm text-charcoal-light hover:bg-cream transition-colors flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        Add Tip
+                      </button>
                     )}
 
                     {/* Correction typing for wrong answers */}
@@ -872,16 +851,6 @@ export default function App() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
-
-                    {/* Keyboard hints - after answer */}
-                    {(feedback === 'correct' || feedback === 'nickname' || correctionComplete) && (
-                      <div className="flex justify-center pt-1 text-xs text-warm-gray">
-                        <span className="flex items-center gap-1.5">
-                          <kbd className="px-1.5 py-0.5 bg-cream-dark rounded text-charcoal-light font-mono">Enter</kbd>
-                          <span>next card</span>
-                        </span>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
