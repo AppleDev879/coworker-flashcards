@@ -247,6 +247,14 @@ export default function App() {
     setShowAnswer(false)
   }
 
+  const restartPractice = () => {
+    setStats({ correct: 0, total: 0 })
+    shuffleCards() // This resets index, guess, feedback, showAnswer and shuffles
+  }
+
+  // Check if practice session is complete
+  const isSessionComplete = stats.total > 0 && stats.total >= practiceCards.length
+
   // Practice Mode
   if (mode === 'practice') {
     if (dataLoading) {
@@ -293,6 +301,124 @@ export default function App() {
                 >
                   {draftCount > 0 ? 'Add Photos to Drafts' : 'Add Your First Face'}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // Session complete - show results
+    if (isSessionComplete) {
+      const percentage = Math.round((stats.correct / stats.total) * 100)
+      const isPerfect = percentage === 100
+      const isGreat = percentage >= 80
+      const isGood = percentage >= 60
+
+      return (
+        <div className="min-h-screen bg-cream grain-bg">
+          <Header />
+          <div className="flex items-center justify-center p-6 pt-16">
+            <div className="relative z-10 animate-in max-w-md w-full">
+              {/* Decorative background elements */}
+              <div className="absolute -top-16 -left-16 w-48 h-48 bg-sage/15 rounded-full blur-3xl" />
+              <div className="absolute -bottom-16 -right-16 w-56 h-56 bg-coral/10 rounded-full blur-3xl" />
+              {isPerfect && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-8 w-32 h-32 bg-dusty-rose/20 rounded-full blur-2xl" />
+              )}
+
+              <div className="relative bg-paper rounded-3xl shadow-[0_8px_40px_rgba(45,42,38,0.12)] overflow-hidden">
+                {/* Celebratory header */}
+                <div className={`py-8 px-6 text-center ${
+                  isPerfect ? 'bg-gradient-to-br from-sage/20 via-dusty-rose/10 to-coral/10' :
+                  isGreat ? 'bg-sage/10' :
+                  isGood ? 'bg-dusty-rose/10' :
+                  'bg-cream'
+                }`}>
+                  {/* Trophy/Star icon */}
+                  <div className={`w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center ${
+                    isPerfect ? 'bg-gradient-to-br from-sage to-sage/80 shadow-lg shadow-sage/30' :
+                    isGreat ? 'bg-sage/20' :
+                    isGood ? 'bg-dusty-rose/20' :
+                    'bg-cream-dark'
+                  }`}>
+                    {isPerfect ? (
+                      <svg className="w-10 h-10 text-cream" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    ) : (
+                      <svg className={`w-10 h-10 ${isGreat ? 'text-sage' : isGood ? 'text-dusty-rose' : 'text-warm-gray'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
+                      </svg>
+                    )}
+                  </div>
+
+                  <h1 className="font-display text-2xl font-semibold text-charcoal mb-2">
+                    {isPerfect ? 'Perfect Score!' :
+                     isGreat ? 'Great Job!' :
+                     isGood ? 'Nice Work!' :
+                     'Session Complete'}
+                  </h1>
+                  <p className="text-charcoal-light">
+                    {isPerfect ? 'You know everyone!' :
+                     isGreat ? 'You're getting really good at this.' :
+                     isGood ? 'Keep practicing to improve.' :
+                     'Practice makes perfect.'}
+                  </p>
+                </div>
+
+                {/* Score display */}
+                <div className="p-8">
+                  <div className="bg-cream rounded-2xl p-6 mb-6">
+                    {/* Big percentage */}
+                    <div className="text-center mb-4">
+                      <div className={`font-display text-6xl font-bold ${
+                        isPerfect ? 'text-sage' :
+                        isGreat ? 'text-sage' :
+                        isGood ? 'text-dusty-rose' :
+                        'text-coral'
+                      }`}>
+                        {percentage}%
+                      </div>
+                      <div className="text-warm-gray text-sm mt-1">accuracy</div>
+                    </div>
+
+                    {/* Breakdown */}
+                    <div className="flex justify-center gap-8 pt-4 border-t border-cream-dark">
+                      <div className="text-center">
+                        <div className="font-display text-2xl font-semibold text-sage">{stats.correct}</div>
+                        <div className="text-xs text-warm-gray uppercase tracking-wide">Correct</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-display text-2xl font-semibold text-coral">{stats.total - stats.correct}</div>
+                        <div className="text-xs text-warm-gray uppercase tracking-wide">Missed</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-display text-2xl font-semibold text-charcoal">{stats.total}</div>
+                        <div className="text-xs text-warm-gray uppercase tracking-wide">Total</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={restartPractice}
+                      className="w-full bg-coral text-cream py-4 rounded-xl font-medium btn-lift flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Try Again
+                    </button>
+                    <button
+                      onClick={() => setMode('manage')}
+                      className="w-full py-4 rounded-xl font-medium border-2 border-cream-dark text-charcoal-light hover:bg-cream transition-colors"
+                    >
+                      Manage Cards
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
