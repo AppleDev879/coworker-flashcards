@@ -22,7 +22,7 @@ export default function Header() {
             </svg>
           </div>
           <h1 className="font-display text-lg font-semibold text-charcoal">
-            Face Cards
+            Face Card
           </h1>
         </div>
 
