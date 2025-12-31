@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useAuth } from './context/AuthContext'
 import { useFlashcards } from './hooks/useFlashcards'
 import { supabase } from './lib/supabase'
 import { parseNames, parseNamesSync } from './utils/parseNames'
 import LoginPage from './components/LoginPage'
 import Header from './components/Header'
+import RocketGame from './components/RocketGame'
 
 export default function App() {
   const { user, loading: authLoading } = useAuth()
@@ -46,6 +47,14 @@ export default function App() {
   const [practiceMnemonicText, setPracticeMnemonicText] = useState('')
   const [addingNickname, setAddingNickname] = useState(false)
 
+  // Game modes
+  const [gameMode, setGameMode] = useState('classic') // 'classic' | 'timed' | 'rocket'
+  const [startTime, setStartTime] = useState(null)
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [rocketHeight, setRocketHeight] = useState(50) // 0-100, starts at 50%
+  const [rocketCrashed, setRocketCrashed] = useState(false)
+  const [rocketBoosting, setRocketBoosting] = useState(false)
+
   // Parse import text for preview (sync, no LLM)
   const parsedPreview = useMemo(() => parseNamesSync(importText), [importText])
 
@@ -60,7 +69,7 @@ export default function App() {
   }, [practiceCards.length])
 
   // Check if practice session is complete (needed for keyboard effect)
-  const isSessionComplete = stats.total > 0 && stats.total >= practiceCards.length
+  const isSessionComplete = (stats.total > 0 && stats.total >= practiceCards.length) || rocketCrashed
 
   // Use shuffled order if available, otherwise sequential
   const actualCardIndex = shuffledIndices.length > 0 ? shuffledIndices[currentIndex] : currentIndex
@@ -112,6 +121,26 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [mode, showAnswer, feedback, correctionComplete, currentCoworker, isSessionComplete, practiceCards.length])
+
+  // Timer for timed mode
+  useEffect(() => {
+    if (gameMode !== 'timed' || !startTime || isSessionComplete) return
+
+    const interval = setInterval(() => {
+      setElapsedTime(Date.now() - startTime)
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [gameMode, startTime, isSessionComplete])
+
+  // Gravity is now handled continuously in RocketGame component
+  const handleRocketCrash = useCallback(() => {
+    setRocketCrashed(true)
+    setRocketHeight(0)
+  }, [])
+
+  // Gravity should be active when in rocket mode, not showing answer, and not crashed
+  const gravityActive = gameMode === 'rocket' && mode === 'practice' && !showAnswer && !rocketCrashed && !isSessionComplete
 
   // Show loading while checking auth
   if (authLoading) {
@@ -308,6 +337,11 @@ export default function App() {
     const isCorrect = guessLower === target
     const isNicknameMatch = !isCorrect && difficulty === 'first' && nicknames.includes(guessLower)
 
+    // Start timer on first guess in timed mode
+    if (gameMode === 'timed' && !startTime) {
+      setStartTime(Date.now())
+    }
+
     setLastGuess(guess.trim())
     setCorrectionInput('')
     setCorrectionComplete(false)
@@ -318,9 +352,35 @@ export default function App() {
     if (isCorrect || isNicknameMatch) {
       setFeedback(isNicknameMatch ? 'nickname' : 'correct')
       setStats(prev => ({ correct: prev.correct + 1, total: prev.total + 1 }))
+      // Rocket boost on correct
+      if (gameMode === 'rocket') {
+        setRocketHeight(prev => Math.min(100, prev + 20))
+        setRocketBoosting(true)
+        setTimeout(() => setRocketBoosting(false), 500)
+        // Auto-advance after brief delay in rocket mode
+        setTimeout(() => {
+          setGuess('')
+          setFeedback(null)
+          setShowAnswer(false)
+          setLastGuess('')
+          setCorrectionInput('')
+          setCorrectionComplete(false)
+          setCurrentIndex(prev => (prev + 1) % practiceCards.length)
+        }, 800)
+      }
     } else {
       setFeedback('incorrect')
       setStats(prev => ({ ...prev, total: prev.total + 1 }))
+      // Rocket drop on incorrect
+      if (gameMode === 'rocket') {
+        setRocketHeight(prev => {
+          const newHeight = Math.max(0, prev - 15)
+          if (newHeight <= 0) {
+            setRocketCrashed(true)
+          }
+          return newHeight
+        })
+      }
     }
     setShowAnswer(true)
   }
@@ -354,6 +414,12 @@ export default function App() {
 
   const restartPractice = () => {
     setStats({ correct: 0, total: 0 })
+    // Reset game mode state
+    setStartTime(null)
+    setElapsedTime(0)
+    setRocketHeight(50)
+    setRocketCrashed(false)
+    setRocketBoosting(false)
     shuffleCards() // This resets index, guess, feedback, showAnswer and shuffles
   }
 
@@ -363,6 +429,23 @@ export default function App() {
     const fullName = currentCoworker.name.trim()
     const firstName = fullName.split(' ')[0]
     return difficulty === 'first' ? firstName : fullName
+  }
+
+  // Format elapsed time as M:SS.s
+  const formatTime = (ms) => {
+    const totalSeconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    const tenths = Math.floor((ms % 1000) / 100)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}.${tenths}`
+  }
+
+  // Handle game mode change
+  const handleGameModeChange = (newMode) => {
+    if (newMode !== gameMode) {
+      setGameMode(newMode)
+      restartPractice()
+    }
   }
 
   // Check if correction input matches
@@ -475,10 +558,40 @@ export default function App() {
 
     // Session complete - show results
     if (isSessionComplete) {
-      const percentage = Math.round((stats.correct / stats.total) * 100)
+      const percentage = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0
       const isPerfect = percentage === 100
       const isGreat = percentage >= 80
       const isGood = percentage >= 60
+
+      // Game mode specific headers
+      const getResultTitle = () => {
+        if (gameMode === 'rocket' && rocketCrashed) return 'Mission Failed!'
+        if (gameMode === 'rocket') return 'Mission Complete!'
+        if (gameMode === 'timed') return `${formatTime(elapsedTime)}`
+        if (isPerfect) return 'Perfect Score!'
+        if (isGreat) return 'Great Job!'
+        if (isGood) return 'Nice Work!'
+        return 'Session Complete'
+      }
+
+      const getResultSubtitle = () => {
+        if (gameMode === 'rocket' && rocketCrashed) return 'The rocket ran out of fuel!'
+        if (gameMode === 'rocket') return 'You reached the finish line!'
+        if (gameMode === 'timed') return 'Time to complete'
+        if (isPerfect) return 'You know everyone!'
+        if (isGreat) return "You're getting really good at this."
+        if (isGood) return 'Keep practicing to improve.'
+        return 'Practice makes perfect.'
+      }
+
+      const getResultIcon = () => {
+        if (gameMode === 'rocket' && rocketCrashed) return '💥'
+        if (gameMode === 'rocket') return '🚀'
+        if (gameMode === 'timed') return '⏱️'
+        return null
+      }
+
+      const resultIcon = getResultIcon()
 
       return (
         <div className="min-h-screen bg-cream grain-bg">
@@ -488,26 +601,34 @@ export default function App() {
               {/* Decorative background elements */}
               <div className="absolute -top-16 -left-16 w-48 h-48 bg-sage/15 rounded-full blur-3xl" />
               <div className="absolute -bottom-16 -right-16 w-56 h-56 bg-coral/10 rounded-full blur-3xl" />
-              {isPerfect && (
+              {isPerfect && gameMode === 'classic' && (
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-8 w-32 h-32 bg-dusty-rose/20 rounded-full blur-2xl" />
               )}
 
               <div className="relative bg-paper rounded-3xl shadow-[0_8px_40px_rgba(45,42,38,0.12)] overflow-hidden">
                 {/* Celebratory header */}
                 <div className={`py-8 px-6 text-center ${
+                  gameMode === 'rocket' && rocketCrashed ? 'bg-coral/10' :
+                  gameMode === 'rocket' ? 'bg-gradient-to-br from-sage/20 to-coral/10' :
+                  gameMode === 'timed' ? 'bg-coral/10' :
                   isPerfect ? 'bg-gradient-to-br from-sage/20 via-dusty-rose/10 to-coral/10' :
                   isGreat ? 'bg-sage/10' :
                   isGood ? 'bg-dusty-rose/10' :
                   'bg-cream'
                 }`}>
-                  {/* Trophy/Star icon */}
+                  {/* Icon */}
                   <div className={`w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center ${
+                    gameMode === 'rocket' && rocketCrashed ? 'bg-coral/20' :
+                    gameMode === 'rocket' ? 'bg-gradient-to-br from-sage to-sage/80 shadow-lg shadow-sage/30' :
+                    gameMode === 'timed' ? 'bg-coral/20' :
                     isPerfect ? 'bg-gradient-to-br from-sage to-sage/80 shadow-lg shadow-sage/30' :
                     isGreat ? 'bg-sage/20' :
                     isGood ? 'bg-dusty-rose/20' :
                     'bg-cream-dark'
                   }`}>
-                    {isPerfect ? (
+                    {resultIcon ? (
+                      <span className="text-4xl">{resultIcon}</span>
+                    ) : isPerfect ? (
                       <svg className="w-10 h-10 text-cream" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                       </svg>
@@ -518,17 +639,11 @@ export default function App() {
                     )}
                   </div>
 
-                  <h1 className="font-display text-2xl font-semibold text-charcoal mb-2">
-                    {isPerfect ? 'Perfect Score!' :
-                     isGreat ? 'Great Job!' :
-                     isGood ? 'Nice Work!' :
-                     'Session Complete'}
+                  <h1 className={`font-display font-semibold text-charcoal mb-2 ${gameMode === 'timed' ? 'text-4xl timer' : 'text-2xl'}`}>
+                    {getResultTitle()}
                   </h1>
                   <p className="text-charcoal-light">
-                    {isPerfect ? 'You know everyone!' :
-                     isGreat ? "You're getting really good at this." :
-                     isGood ? 'Keep practicing to improve.' :
-                     'Practice makes perfect.'}
+                    {getResultSubtitle()}
                   </p>
                 </div>
 
@@ -596,18 +711,53 @@ export default function App() {
         <Header />
         <div className="p-4 sm:p-6 pt-6 sm:pt-8">
           <div className="max-w-md mx-auto animate-in">
+            {/* Game Mode Selector */}
+            <div className="flex justify-center mb-4">
+              <div className="inline-flex gap-1 bg-cream-dark rounded-lg p-1">
+                <button
+                  onClick={() => handleGameModeChange('classic')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                    gameMode === 'classic' ? 'bg-paper text-charcoal shadow-sm' : 'text-warm-gray hover:text-charcoal'
+                  }`}
+                >
+                  Classic
+                </button>
+                <button
+                  onClick={() => handleGameModeChange('timed')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                    gameMode === 'timed' ? 'bg-paper text-charcoal shadow-sm' : 'text-warm-gray hover:text-charcoal'
+                  }`}
+                >
+                  Timed
+                </button>
+                <button
+                  onClick={() => handleGameModeChange('rocket')}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                    gameMode === 'rocket' ? 'bg-paper text-charcoal shadow-sm' : 'text-warm-gray hover:text-charcoal'
+                  }`}
+                >
+                  Rocket
+                </button>
+              </div>
+            </div>
+
             {/* Stats Header */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
               <div className="flex items-center justify-between sm:justify-start gap-3">
-                <div className="text-sm">
-                  {stats.total > 0 && (
-                    <span className="bg-paper px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-sm text-charcoal-light border border-cream-dark">
-                      <span className="text-sage font-semibold">{stats.correct}</span>
-                      <span className="text-warm-gray">/{stats.total}</span>
-                      <span className="text-warm-gray ml-1">({Math.round(stats.correct/stats.total*100)}%)</span>
-                    </span>
-                  )}
-                </div>
+                {/* Timer display for timed mode */}
+                {gameMode === 'timed' && (
+                  <span className="timer bg-coral/10 text-coral px-3 py-1.5 rounded-full text-lg font-semibold border border-coral/20">
+                    {formatTime(elapsedTime)}
+                  </span>
+                )}
+                {/* Stats for classic/timed mode */}
+                {gameMode !== 'rocket' && stats.total > 0 && (
+                  <span className="bg-paper px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-sm text-charcoal-light border border-cream-dark text-sm">
+                    <span className="text-sage font-semibold">{stats.correct}</span>
+                    <span className="text-warm-gray">/{stats.total}</span>
+                    <span className="text-warm-gray ml-1">({Math.round(stats.correct/stats.total*100)}%)</span>
+                  </span>
+                )}
                 <select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value)}
@@ -625,24 +775,38 @@ export default function App() {
               </button>
             </div>
 
-            {/* Flashcard - Polaroid Style */}
-            <div className="polaroid rounded-xl overflow-hidden">
-              {/* Photo */}
-              <div className="aspect-square bg-cream-dark flex items-center justify-center overflow-hidden photo-hover">
-                {currentCoworker?.photo_url ? (
-                  <img
-                    src={currentCoworker.photo_url}
-                    alt="Coworker"
-                    className="w-full h-full object-cover"
+            {/* Flashcard - Polaroid Style or Rocket Game */}
+            <div className={gameMode === 'rocket' ? 'bg-paper rounded-xl overflow-hidden shadow-lg' : 'polaroid rounded-xl overflow-hidden'}>
+              {/* Photo or Game */}
+              {gameMode === 'rocket' ? (
+                <div className="relative">
+                  <RocketGame
+                    rocketHeight={rocketHeight}
+                    boosting={rocketBoosting}
+                    crashed={rocketCrashed}
+                    coworkerPhoto={currentCoworker?.photo_url}
+                    coworkerName={currentCoworker?.name}
+                    onCrash={handleRocketCrash}
+                    gravityActive={gravityActive}
                   />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-warm-gray">
-                    <svg className="w-20 h-20 mb-2 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="aspect-square bg-cream-dark flex items-center justify-center overflow-hidden photo-hover">
+                  {currentCoworker?.photo_url ? (
+                    <img
+                      src={currentCoworker.photo_url}
+                      alt="Coworker"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-warm-gray">
+                      <svg className="w-20 h-20 mb-2 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Card Info */}
               <div className="pt-4 pb-2 text-center">
@@ -798,8 +962,8 @@ export default function App() {
                       </button>
                     )}
 
-                    {/* Correction typing for wrong answers */}
-                    {feedback === 'incorrect' && (
+                    {/* Correction typing for wrong answers - only in classic mode */}
+                    {feedback === 'incorrect' && gameMode === 'classic' && (
                       <div className="bg-cream rounded-xl p-4">
                         <label className="block text-sm text-charcoal-light mb-2">
                           Type "<span className="font-semibold text-charcoal">{getTargetName()}</span>" to continue:
@@ -839,9 +1003,9 @@ export default function App() {
                     {/* Next card button */}
                     <button
                       onClick={nextCard}
-                      disabled={feedback === 'incorrect' && !correctionComplete}
+                      disabled={feedback === 'incorrect' && !correctionComplete && gameMode === 'classic'}
                       className={`w-full py-3 rounded-xl font-medium btn-lift flex items-center justify-center gap-2 ${
-                        feedback === 'incorrect' && !correctionComplete
+                        feedback === 'incorrect' && !correctionComplete && gameMode === 'classic'
                           ? 'bg-cream-dark text-warm-gray cursor-not-allowed'
                           : 'bg-coral text-cream'
                       }`}

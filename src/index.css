@@ -209,3 +209,46 @@ html {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* Timer display - monospace for stable width */
+.timer {
+  font-variant-numeric: tabular-nums;
+  font-family: 'DM Sans', ui-monospace, SFMono-Regular, monospace;
+  letter-spacing: -0.02em;
+}
+
+/* Rocket boost animation */
+@keyframes rocketBoost {
+  0% { transform: scale(1) translateY(0); }
+  25% { transform: scale(1.15) translateY(-2px); }
+  50% { transform: scale(1.1) translateY(-4px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.rocket-boost {
+  animation: rocketBoost 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Rocket crash animation */
+@keyframes rocketCrash {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(15deg); }
+  50% { transform: rotate(-10deg); }
+  75% { transform: rotate(5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.rocket-crash {
+  animation: rocketCrash 0.5s ease-out;
+}
+
+/* Pixel art rendering */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.rocket-game {
+  background: #0f0f23;
+  position: relative;
+}
