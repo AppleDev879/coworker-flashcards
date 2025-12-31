@@ -80,9 +80,11 @@ export default function App() {
   // Check if practice session is complete (needed for keyboard effect)
   const isSessionComplete = (stats.total > 0 && stats.total >= practiceCards.length) || rocketCrashed
 
-  // Use shuffled order if available, otherwise sequential
-  const actualCardIndex = shuffledIndices.length > 0 ? shuffledIndices[currentIndex] : currentIndex
-  const currentCoworker = practiceCards[actualCardIndex]
+  // Use shuffled order if available, otherwise sequential - memoize to prevent unnecessary re-renders
+  const currentCoworker = useMemo(() => {
+    const actualIndex = shuffledIndices.length > 0 ? shuffledIndices[currentIndex] : currentIndex
+    return practiceCards[actualIndex]
+  }, [practiceCards, shuffledIndices, currentIndex])
 
   // Reset all card-related state (shared between functions) - must be before early returns
   const resetCardState = useCallback(() => {
@@ -819,6 +821,7 @@ export default function App() {
                       placeholder={difficulty === 'first' ? "First name?" : "Full name?"}
                       className="w-full px-4 py-3 input-warm rounded-xl text-lg text-charcoal font-medium placeholder:text-warm-gray/60"
                       autoFocus
+                      aria-label={`Enter ${difficulty === 'first' ? 'first' : 'full'} name for the person shown`}
                     />
                     <div className="flex gap-3">
                       <button
@@ -974,6 +977,7 @@ export default function App() {
                                 : 'bg-paper border-2 border-cream-dark focus:border-coral/50'
                             } focus:outline-none`}
                             autoFocus
+                            aria-label={`Type the correct name: ${getTargetName()}`}
                           />
                           {correctionComplete && (
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sage">
@@ -1119,6 +1123,7 @@ export default function App() {
                           className="hidden"
                           disabled={saving}
                           onChange={(e) => handleFileUpload(e, true, coworker.id)}
+                          aria-label={`Upload photo for ${coworker.name}`}
                         />
                       </label>
                     </div>
@@ -1276,6 +1281,7 @@ export default function App() {
                       accept="image/*"
                       className="hidden"
                       onChange={(e) => handleFileUpload(e)}
+                      aria-label="Upload photo for new coworker"
                     />
                   </label>
                 </div>
