@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 export default function LoginPage() {
   const { signInWithGoogle } = useAuth()
@@ -35,7 +35,7 @@ export default function LoginPage() {
             </div>
 
             <h1 className="font-display text-3xl font-semibold text-charcoal tracking-tight mb-3">
-              Face Cards
+              Face Card
             </h1>
 
             <p className="text-charcoal-light text-base leading-relaxed">

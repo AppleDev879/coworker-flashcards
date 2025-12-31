@@ -13,7 +13,7 @@ npm run preview  # Preview production build
 
 ## Architecture
 
-**Face Cards** - A flashcard app for learning coworker names with AI-generated memory tips.
+**Face Card** - A flashcard app for learning coworker names with AI-generated memory tips.
 
 ### Stack
 - React 19 + Vite + Tailwind CSS 4

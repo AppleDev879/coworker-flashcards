@@ -1,4 +1,4 @@
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Header() {
   const { user, signOut } = useAuth()
@@ -22,7 +22,7 @@ export default function Header() {
             </svg>
           </div>
           <h1 className="font-display text-lg font-semibold text-charcoal">
-            Face Cards
+            Face Card
           </h1>
         </div>
 
