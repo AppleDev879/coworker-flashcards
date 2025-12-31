@@ -1,5 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 
+// Game balance constants
+const GAME = {
+  // Gameplay
+  GRAVITY_RATE: 8,          // % altitude lost per second
+  BASE_BOOST: 20,           // Base boost amount at low altitude
+  BOOST_MULTIPLIER_MAX: 2.5, // Boost multiplier at 0% altitude
+  BOOST_MULTIPLIER_MIN: 1.0, // Boost multiplier at 100% altitude
+  DANGER_THRESHOLD: 30,     // Altitude % below which danger warning shows
+  STARTING_ALTITUDE: 50,    // Starting altitude %
+
+  // Animation
+  STAR_COUNT: 60,
+  LERP_SPEED_UP: 8,         // Speed for upward visual smoothing
+  LERP_SPEED_DOWN: 12,      // Speed for downward visual smoothing
+  DEBUG_LOG_INTERVAL: 60,   // Frames between debug logs
+
+  // World rendering
+  GROUND_LEVEL: 20,         // World Y offset for ground
+  ATMOSPHERE_END: 80,       // World Y offset where atmosphere ends
+
+  // Canvas dimensions
+  CANVAS_WIDTH: 320,
+  CANVAS_HEIGHT: 360,
+}
+
 // Pixel art rocket (6 wide x 8 tall, scaled up)
 const ROCKET_PIXELS = [
   '  ##  ',
@@ -54,7 +79,7 @@ export default function RocketGame({
   // Generate stars on mount - spread across entire canvas
   useEffect(() => {
     const newStars = []
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < GAME.STAR_COUNT; i++) {
       newStars.push({
         x: Math.random() * 100,
         y: Math.random() * 100,
@@ -67,9 +92,9 @@ export default function RocketGame({
 
   // Reset height when restarting game
   useEffect(() => {
-    if (rocketHeight === 50 && currentHeightRef.current < 10) {
-      currentHeightRef.current = 50
-      visualHeightRef.current = 50
+    if (rocketHeight === GAME.STARTING_ALTITUDE && currentHeightRef.current < 10) {
+      currentHeightRef.current = GAME.STARTING_ALTITUDE
+      visualHeightRef.current = GAME.STARTING_ALTITUDE
     }
   }, [rocketHeight])
 
@@ -109,8 +134,8 @@ export default function RocketGame({
       frameCountRef.current++
       const frameCount = frameCountRef.current
 
-      // Debug logging every 60 frames (~1 second)
-      if (frameCount % 60 === 0) {
+      // Debug logging every N frames (~1 second at 60fps)
+      if (frameCount % GAME.DEBUG_LOG_INTERVAL === 0) {
         console.log('RocketGame state:', {
           gravityActive,
           crashed,
@@ -120,10 +145,10 @@ export default function RocketGame({
         })
       }
 
-      // Apply continuous gravity (drops ~8% per second)
+      // Apply continuous gravity
       if (gravityActive && !crashed) {
-        currentHeightRef.current -= 8 * deltaTime
-        if (frameCount % 60 === 0) {
+        currentHeightRef.current -= GAME.GRAVITY_RATE * deltaTime
+        if (frameCount % GAME.DEBUG_LOG_INTERVAL === 0) {
           console.log('Gravity applied, new height:', currentHeightRef.current)
         }
         if (currentHeightRef.current <= 0) {
@@ -140,11 +165,9 @@ export default function RocketGame({
 
       // Detect new boost (when boosting prop transitions from false to true)
       if (boosting && !lastBoostingRef.current) {
-        // Base boost of 20, scaled by altitude
-        const baseBoost = 20
-        // At 0% altitude: 2.5x boost. At 100% altitude: 1x boost
-        const boostMultiplier = 2.5 - (currentHeightRef.current / 100) * 1.5
-        const boostAmount = baseBoost * boostMultiplier
+        // Boost scales by altitude - stronger at low altitude
+        const boostMultiplier = GAME.BOOST_MULTIPLIER_MAX - (currentHeightRef.current / 100) * (GAME.BOOST_MULTIPLIER_MAX - GAME.BOOST_MULTIPLIER_MIN)
+        const boostAmount = GAME.BASE_BOOST * boostMultiplier
         const prevHeight = currentHeightRef.current
         currentHeightRef.current = Math.min(100, currentHeightRef.current + boostAmount)
         console.log('BOOST! +' + Math.round(boostAmount) + ' (x' + boostMultiplier.toFixed(1) + '), current was:', Math.round(prevHeight), ', now:', Math.round(currentHeightRef.current))
@@ -155,7 +178,7 @@ export default function RocketGame({
       const heightDiff = currentHeightRef.current - visualHeightRef.current
       if (Math.abs(heightDiff) > 0.1) {
         // Faster animation when boosting up, slower when falling
-        const lerpSpeed = heightDiff > 0 ? 8 : 12 // Higher = faster
+        const lerpSpeed = heightDiff > 0 ? GAME.LERP_SPEED_UP : GAME.LERP_SPEED_DOWN
         visualHeightRef.current += heightDiff * lerpSpeed * deltaTime
       } else {
         visualHeightRef.current = currentHeightRef.current
@@ -168,15 +191,12 @@ export default function RocketGame({
       const worldOffset = displayHeight * 2 // 0-200 range
 
       // Sky color gradient based on altitude
-      const groundLevel = 20
-      const atmosphereEnd = 80
-
-      if (displayHeight < groundLevel) {
+      if (displayHeight < GAME.GROUND_LEVEL) {
         // Near ground - darker blue
         ctx.fillStyle = '#1a1a3e'
-      } else if (displayHeight < atmosphereEnd) {
+      } else if (displayHeight < GAME.ATMOSPHERE_END) {
         // In atmosphere - gradient to darker
-        const t = (displayHeight - groundLevel) / (atmosphereEnd - groundLevel)
+        const t = (displayHeight - GAME.GROUND_LEVEL) / (GAME.ATMOSPHERE_END - GAME.GROUND_LEVEL)
         const r = Math.floor(26 - t * 16)
         const g = Math.floor(26 - t * 16)
         const b = Math.floor(62 - t * 30)
@@ -354,7 +374,7 @@ export default function RocketGame({
       ctx.fillText(`${Math.round(displayHeight)}%`, meterX, meterY + meterHeight + 15)
 
       // Draw danger warning when low
-      if (displayHeight < 30 && !crashed) {
+      if (displayHeight < GAME.DANGER_THRESHOLD && !crashed) {
         const flash = Math.sin(frameCount * 0.15) > 0
         if (flash) {
           ctx.fillStyle = '#ff6b6b'
@@ -380,8 +400,8 @@ export default function RocketGame({
     <div className="rocket-game rounded-xl overflow-hidden border-4 border-[#2a2a4a]">
       <canvas
         ref={canvasRef}
-        width={320}
-        height={360}
+        width={GAME.CANVAS_WIDTH}
+        height={GAME.CANVAS_HEIGHT}
         className="w-full pixelated"
         style={{ imageRendering: 'pixelated' }}
       />

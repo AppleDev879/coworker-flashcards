@@ -43,24 +43,34 @@ export function useFlashcards() {
     setRefetchCounter(c => c + 1)
   }, [])
 
-  // Upload photo to storage and return public URL
-  const uploadPhoto = async (file) => {
+  // Upload photo to storage with retry logic
+  const uploadPhoto = async (file, maxRetries = 3) => {
     if (!user || !file) return null
 
     const fileExt = file.name.split('.').pop()
     const fileName = `${user.id}/${Date.now()}.${fileExt}`
 
-    const { error: uploadError } = await supabase.storage
-      .from('flashcard-photos')
-      .upload(fileName, file)
+    let lastError = null
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const { error: uploadError } = await supabase.storage
+        .from('flashcard-photos')
+        .upload(fileName, file)
 
-    if (uploadError) throw uploadError
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('flashcard-photos')
+          .getPublicUrl(fileName)
+        return publicUrl
+      }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('flashcard-photos')
-      .getPublicUrl(fileName)
+      lastError = uploadError
+      if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)))
+      }
+    }
 
-    return publicUrl
+    throw lastError
   }
 
   // Extract file path from URL for deletion

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useFlashcards } from './hooks/useFlashcards'
 import { supabase } from './lib/supabase'
@@ -54,9 +54,18 @@ export default function App() {
   const [rocketHeight, setRocketHeight] = useState(50) // 0-100, starts at 50%
   const [rocketCrashed, setRocketCrashed] = useState(false)
   const [rocketBoosting, setRocketBoosting] = useState(false)
+  const [debouncedImportText, setDebouncedImportText] = useState('')
+
+  // Debounce import text for preview to prevent lag on large inputs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedImportText(importText)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [importText])
 
   // Parse import text for preview (sync, no LLM)
-  const parsedPreview = useMemo(() => parseNamesSync(importText), [importText])
+  const parsedPreview = useMemo(() => parseNamesSync(debouncedImportText), [debouncedImportText])
 
   // Filter cards with photos for practice mode
   const practiceCards = useMemo(() => flashcards.filter(c => c.photo_url), [flashcards])
@@ -75,6 +84,40 @@ export default function App() {
   const actualCardIndex = shuffledIndices.length > 0 ? shuffledIndices[currentIndex] : currentIndex
   const currentCoworker = practiceCards[actualCardIndex]
 
+  // Reset all card-related state (shared between functions) - must be before early returns
+  const resetCardState = useCallback(() => {
+    setGuess('')
+    setFeedback(null)
+    setShowAnswer(false)
+    setLastGuess('')
+    setCorrectionInput('')
+    setCorrectionComplete(false)
+    setEditingPracticeMnemonic(false)
+    setPracticeMnemonicText('')
+    setAddingNickname(false)
+  }, [])
+
+  const nextCard = useCallback(() => {
+    resetCardState()
+    setCurrentIndex(prev => (prev + 1) % practiceCards.length)
+  }, [resetCardState, practiceCards.length])
+
+  // Keep ref in sync to avoid stale closures in event handlers
+  const nextCardRef = useRef(nextCard)
+  useEffect(() => { nextCardRef.current = nextCard }, [nextCard])
+
+  const shuffleCards = useCallback(() => {
+    // Fisher-Yates shuffle
+    const indices = [...Array(practiceCards.length).keys()]
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[indices[i], indices[j]] = [indices[j], indices[i]]
+    }
+    setShuffledIndices(indices)
+    setCurrentIndex(0)
+    resetCardState()
+  }, [practiceCards.length, resetCardState])
+
   // Keyboard shortcuts for practice mode - must be before early returns
   useEffect(() => {
     if (mode !== 'practice' || !currentCoworker || isSessionComplete) return
@@ -91,17 +134,7 @@ export default function App() {
           // Only allow next if correct, nickname match, or correction complete
           if (feedback === 'correct' || feedback === 'nickname' || correctionComplete) {
             e.preventDefault()
-            // Inline the nextCard logic to avoid stale closure
-            setGuess('')
-            setFeedback(null)
-            setShowAnswer(false)
-            setLastGuess('')
-            setCorrectionInput('')
-            setCorrectionComplete(false)
-            setEditingPracticeMnemonic(false)
-            setPracticeMnemonicText('')
-            setAddingNickname(false)
-            setCurrentIndex(prev => (prev + 1) % practiceCards.length)
+            nextCardRef.current()
           }
         }
       } else {
@@ -120,7 +153,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [mode, showAnswer, feedback, correctionComplete, currentCoworker, isSessionComplete, practiceCards.length])
+  }, [mode, showAnswer, feedback, correctionComplete, currentCoworker, isSessionComplete])
 
   // Timer for timed mode
   useEffect(() => {
@@ -383,33 +416,6 @@ export default function App() {
       }
     }
     setShowAnswer(true)
-  }
-
-  const nextCard = () => {
-    setGuess('')
-    setFeedback(null)
-    setShowAnswer(false)
-    setLastGuess('')
-    setCorrectionInput('')
-    setCorrectionComplete(false)
-    setEditingPracticeMnemonic(false)
-    setPracticeMnemonicText('')
-    setAddingNickname(false)
-    setCurrentIndex((currentIndex + 1) % practiceCards.length)
-  }
-
-  const shuffleCards = () => {
-    // Fisher-Yates shuffle
-    const indices = [...Array(practiceCards.length).keys()]
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[indices[i], indices[j]] = [indices[j], indices[i]]
-    }
-    setShuffledIndices(indices)
-    setCurrentIndex(0)
-    setGuess('')
-    setFeedback(null)
-    setShowAnswer(false)
   }
 
   const restartPractice = () => {
