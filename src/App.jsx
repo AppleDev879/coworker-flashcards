@@ -46,6 +46,8 @@ export default function App() {
   const [editingPracticeMnemonic, setEditingPracticeMnemonic] = useState(false)
   const [practiceMnemonicText, setPracticeMnemonicText] = useState('')
   const [addingNickname, setAddingNickname] = useState(false)
+  const [editingNicknameId, setEditingNicknameId] = useState(null)
+  const [newNicknameText, setNewNicknameText] = useState('')
 
   // Game modes
   const [gameMode, setGameMode] = useState('classic') // 'classic' | 'timed' | 'rocket'
@@ -468,18 +470,30 @@ export default function App() {
     setCorrectionComplete(checkCorrection(value))
   }
 
-  // Handle adding nickname
-  const handleAddNickname = async () => {
-    if (!lastGuess || !currentCoworker) return
+  // Handle adding nickname from manage view
+  const handleAddNicknameManage = async (coworkerId) => {
+    if (!newNicknameText.trim()) return
     setAddingNickname(true)
     try {
-      await addNickname(currentCoworker.id, lastGuess)
-      // Skip correction typing after adding nickname
-      setCorrectionComplete(true)
+      await addNickname(coworkerId, newNicknameText.trim())
+      setNewNicknameText('')
+      setEditingNicknameId(null)
     } catch (err) {
       console.error('Failed to add nickname:', err)
     } finally {
       setAddingNickname(false)
+    }
+  }
+
+  // Handle removing a nickname
+  const handleRemoveNickname = async (coworkerId, nicknameToRemove) => {
+    const coworker = flashcards.find(f => f.id === coworkerId)
+    if (!coworker) return
+    const updatedNicknames = (coworker.nicknames || []).filter(n => n !== nicknameToRemove)
+    try {
+      await updateFlashcard(coworkerId, { nicknames: updatedNicknames })
+    } catch (err) {
+      console.error('Failed to remove nickname:', err)
     }
   }
 
@@ -886,20 +900,6 @@ export default function App() {
                       <div className="font-display text-2xl font-semibold text-charcoal">{currentCoworker.name}</div>
                     </div>
 
-                    {/* Add as nickname button - only show for wrong guesses that look like nicknames */}
-                    {feedback === 'incorrect' && lastGuess && difficulty === 'first' && !currentCoworker.nicknames?.some(n => n.toLowerCase() === lastGuess.toLowerCase()) && (
-                      <button
-                        onClick={handleAddNickname}
-                        disabled={addingNickname}
-                        className="w-full py-2.5 px-4 bg-dusty-rose/10 border border-dusty-rose/30 rounded-xl text-sm text-dusty-rose hover:bg-dusty-rose/20 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        {addingNickname ? 'Adding...' : `Add "${lastGuess}" as nickname`}
-                      </button>
-                    )}
-
                     {/* Mnemonic section with edit capability */}
                     {editingPracticeMnemonic ? (
                       <div className="bg-dusty-rose/10 border border-dusty-rose/30 rounded-xl p-4">
@@ -1131,6 +1131,68 @@ export default function App() {
                     {/* Info */}
                     <div className="flex-1 min-w-0 py-1">
                       <h3 className="font-display font-semibold text-lg text-charcoal mb-1">{coworker.name}</h3>
+
+                      {/* Nicknames section */}
+                      <div className="mb-3">
+                        {coworker.nicknames && coworker.nicknames.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {coworker.nicknames.map((nickname, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-dusty-rose/10 text-dusty-rose text-xs rounded-full"
+                              >
+                                {nickname}
+                                <button
+                                  onClick={() => handleRemoveNickname(coworker.id, nickname)}
+                                  className="hover:text-coral transition-colors cursor-pointer"
+                                  aria-label={`Remove nickname ${nickname}`}
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {editingNicknameId === coworker.id ? (
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newNicknameText}
+                              onChange={(e) => setNewNicknameText(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleAddNicknameManage(coworker.id)}
+                              placeholder="Enter nickname..."
+                              className="flex-1 px-2 py-1 text-sm input-warm rounded-lg"
+                              autoFocus
+                              aria-label={`Add nickname for ${coworker.name}`}
+                            />
+                            <button
+                              onClick={() => handleAddNicknameManage(coworker.id)}
+                              disabled={addingNickname || !newNicknameText.trim()}
+                              className="px-2 py-1 bg-sage text-cream text-xs rounded-lg btn-lift disabled:bg-cream-dark disabled:text-warm-gray cursor-pointer"
+                            >
+                              {addingNickname ? '...' : 'Add'}
+                            </button>
+                            <button
+                              onClick={() => { setEditingNicknameId(null); setNewNicknameText('') }}
+                              className="px-2 py-1 text-xs text-warm-gray hover:text-charcoal cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setEditingNicknameId(coworker.id)}
+                            className="text-xs text-warm-gray hover:text-dusty-rose transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add nickname
+                          </button>
+                        )}
+                      </div>
 
                       {/* Mnemonic editing mode */}
                       {editingMnemonicId === coworker.id ? (
