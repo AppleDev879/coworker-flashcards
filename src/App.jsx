@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { useAuth } from './context/AuthContext'
+import { useAuth } from './hooks/useAuth'
 import { useFlashcards } from './hooks/useFlashcards'
 import { supabase } from './lib/supabase'
 import { parseNames, parseNamesSync } from './utils/parseNames'
@@ -305,7 +305,7 @@ export default function App() {
             await supabase.functions.invoke('fetch-and-store-image', {
               body: { imageUrl: imageUrls[card.name], flashcardId: card.id, userId: user.id }
             })
-          } catch (e) {
+          } catch {
             // Silently fail individual fetches
           } finally {
             setFetchingImages(prev => {
@@ -487,19 +487,6 @@ export default function App() {
       console.error('Failed to save mnemonic:', err)
     } finally {
       setSaving(false)
-    }
-  }
-
-  // Handle generating practice mnemonic
-  const handleGeneratePracticeMnemonic = async () => {
-    if (!currentCoworker) return
-    setGeneratingMnemonicId(currentCoworker.id)
-    try {
-      await generateMnemonic(currentCoworker.id)
-    } catch (err) {
-      console.error('Failed to generate mnemonic:', err)
-    } finally {
-      setGeneratingMnemonicId(null)
     }
   }
 
@@ -785,7 +772,6 @@ export default function App() {
                     boosting={rocketBoosting}
                     crashed={rocketCrashed}
                     coworkerPhoto={currentCoworker?.photo_url}
-                    coworkerName={currentCoworker?.name}
                     onCrash={handleRocketCrash}
                     gravityActive={gravityActive}
                   />

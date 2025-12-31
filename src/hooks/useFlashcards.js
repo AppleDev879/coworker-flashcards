@@ -1,38 +1,47 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from './useAuth'
 
 export function useFlashcards() {
   const { user } = useAuth()
   const [flashcards, setFlashcards] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [refetchCounter, setRefetchCounter] = useState(0)
 
-  // Fetch all flashcards for the current user
-  const fetchFlashcards = useCallback(async () => {
-    if (!user) return
+  // Load flashcards on mount, when user changes, or when refetch is called
+  useEffect(() => {
+    if (!user) {
+      setLoading(false)
+      return
+    }
 
+    let cancelled = false
     setLoading(true)
     setError(null)
 
-    const { data, error: fetchError } = await supabase
+    supabase
       .from('flashcards')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
+      .then(({ data, error: fetchError }) => {
+        if (cancelled) return
+        if (fetchError) {
+          setError(fetchError.message)
+        } else {
+          setFlashcards(data || [])
+        }
+        setLoading(false)
+      })
 
-    if (fetchError) {
-      setError(fetchError.message)
-    } else {
-      setFlashcards(data || [])
-    }
-    setLoading(false)
-  }, [user])
+    return () => { cancelled = true }
+  }, [user, refetchCounter])
 
-  // Load flashcards on mount and when user changes
-  useEffect(() => {
-    fetchFlashcards()
-  }, [fetchFlashcards])
+  // Refetch function that triggers the effect
+  const fetchFlashcards = useCallback(() => {
+    setRefetchCounter(c => c + 1)
+  }, [])
 
   // Upload photo to storage and return public URL
   const uploadPhoto = async (file) => {
@@ -57,8 +66,17 @@ export function useFlashcards() {
   // Extract file path from URL for deletion
   const getFilePathFromUrl = (url) => {
     if (!url) return null
-    const match = url.match(/flashcard-photos\/(.+)$/)
-    return match ? match[1] : null
+    try {
+      // Parse URL properly to handle query params
+      const urlObj = new URL(url)
+      const path = urlObj.pathname
+      const match = path.match(/flashcard-photos\/(.+)$/)
+      return match ? match[1] : null
+    } catch (err) {
+      // Fallback for malformed URLs
+      console.error('Invalid URL:', url, err)
+      return null
+    }
   }
 
   // Add a new flashcard

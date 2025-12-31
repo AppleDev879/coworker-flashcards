@@ -34,7 +34,6 @@ export default function RocketGame({
   boosting,
   crashed,
   coworkerPhoto,
-  coworkerName,
   onCrash, // Callback when crashed
   gravityActive, // Whether gravity should be applied
 }) {
@@ -43,7 +42,7 @@ export default function RocketGame({
   const [photoImage, setPhotoImage] = useState(null)
   const animationRef = useRef(null)
   const frameCountRef = useRef(0)
-  const lastTimeRef = useRef(performance.now())
+  const lastTimeRef = useRef(0)
   const currentHeightRef = useRef(rocketHeight) // Actual height (with gravity/boosts applied)
   const visualHeightRef = useRef(rocketHeight) // Smoothly animated display height
   const lastBoostingRef = useRef(false) // Track boosting state to detect new boosts
